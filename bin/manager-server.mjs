@@ -2,24 +2,18 @@
 // Detached account manager server (started by lib/server-process.mjs). Exits
 // on its own after 30 minutes without requests; the open page polls, so it
 // stays up while the tab is open.
-import { execFile } from 'node:child_process'
 import { readFileSync, rmSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { syncPanel } from '../lib/panel.mjs'
+import { notifyDesktop } from '../lib/platform.mjs'
 import { codeFingerprint, serverStatePath } from '../lib/server-process.mjs'
 import { createManagerServer } from '../lib/server.mjs'
 
 const log = (message) => console.error(`${new Date().toISOString()} ${message}`)
 
 // Orca's notification API belongs to the plugin worker; this process uses the
-// macOS one. Strings travel as argv, never as script source.
-function notify(title, body) {
-  execFile(
-    '/usr/bin/osascript',
-    ['-e', 'on run argv', '-e', 'display notification (item 2 of argv) with title (item 1 of argv)', '-e', 'end run', title, body],
-    () => {}
-  )
-}
+// desktop's own (macOS, Linux; on Windows the page's message is enough).
+const notify = notifyDesktop
 
 const server = createManagerServer({
   keepAlive: true,

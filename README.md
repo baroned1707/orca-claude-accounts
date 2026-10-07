@@ -8,30 +8,51 @@ from `claude setup-token` ([docs](https://code.claude.com/docs/en/authentication
 - **Token check** with Anthropic before saving (uses no quota).
 - **Usage per account**: 5-hour and 7-day usage with reset times, shown by default.
 - **Sidebar panel**, **command palette** commands and **shortcuts** in Orca, plus a CLI.
-- Tokens live in the **macOS Keychain**, never in the plugin folder.
+- Tokens live in your system's **secret store** (macOS Keychain, Windows DPAPI,
+  Linux keyring), never in the plugin folder.
 
 > Experimental: built on Orca's plugin API v1 (Orca 1.4.x), which is itself experimental.
 
+| Platform | Status |
+| --- | --- |
+| macOS | tested daily |
+| Linux | storage and CLI tested (Debian, with and without a keyring); Orca integration untested |
+| Windows | **untested** — code paths exist, reports welcome |
+
 ## Requirements
 
-- macOS (uses the Keychain, `osascript` and `sqlite3`)
-- [Orca](https://github.com/stablyai/orca) 1.4 or newer
+- [Orca](https://github.com/stablyai/orca) 1.4 or newer on macOS, Windows or Linux
+- Linux: `secret-tool` (package `libsecret-tools` / `libsecret`) and a running
+  keyring (GNOME Keyring, KWallet) — otherwise tokens fall back to a mode-600 file
 - Claude Code, and a Claude subscription per account
 - Node.js 18+ only if you want the `claude-accounts` CLI
 
 ## Install
 
+### Recommended: developer path (live sidebar panel)
+
 ```sh
-git clone https://github.com/baroned1707/orca-claude-accounts.git
+git clone --branch v0.11.0 https://github.com/baroned1707/orca-claude-accounts.git
 cd orca-claude-accounts
 npm link        # optional: adds the `claude-accounts` CLI to your PATH
 ```
 
 In Orca: **Settings → Plugins → Developer plugin paths** → add the cloned folder,
 enable **Claude Accounts** and accept its capability (notifications).
+`--branch v0.11.0` pins the release; `git fetch --tags && git checkout v<next>` upgrades.
 
-The plugin is loaded from a developer path on purpose: the sidebar panel is
-refreshed by rewriting `panel.html` in the plugin folder (see [Sidebar panel](#sidebar-panel)).
+### Install from Git (pinned)
+
+In Orca's plugin installer choose **Git** and enter the URL with an explicit ref:
+
+```
+https://github.com/baroned1707/orca-claude-accounts.git#v0.11.0
+```
+
+Orca requires the `#ref` (a tag or a commit SHA) and installs exactly that
+version. Everything works the same except the sidebar panel: an installed copy is
+content-hashed and never rewritten, so the panel can't show live data (see
+[Sidebar panel](#sidebar-panel)). Use the developer path if you want it.
 
 ## Use it
 
@@ -41,6 +62,7 @@ refreshed by rewriting `panel.html` in the plugin folder (see [Sidebar panel](#s
 | Sidebar | `⌘L` opens the right sidebar → **bot** icon → **Claude Accounts** |
 | Command palette | `⌘J` → type `Claude Account` |
 
+On Windows and Linux, read `⌘` as `Ctrl` (`Ctrl+Shift+M`, `Ctrl+Shift+J`, …).
 `⌘⇧M` is also Orca's default for *New markdown tab*. If it opens a markdown tab,
 change one of the two in **Settings → Shortcuts**.
 
@@ -67,16 +89,28 @@ while running**, so:
 
 **Use default login** removes the token, and Claude Code goes back to your `/login` session.
 
-## Where data is stored
+## Where tokens are stored
+
+| Platform | Every account's token | How |
+| --- | --- | --- |
+| macOS | login Keychain, service `orca-claude-accounts` | `security`, token on stdin |
+| Windows | `%APPDATA%\orca-claude-accounts\tokens\<id>.dpapi` | encrypted with DPAPI for your Windows user (PowerShell `ConvertFrom-SecureString`), token on stdin |
+| Linux | Secret Service keyring (GNOME Keyring, KWallet…) | `secret-tool`, token on stdin |
+| Linux, no keyring | `~/.config/orca-claude-accounts/tokens/<id>` | plain file, mode 600 — flagged in the UI |
+
+Each account records which store holds its token. Tokens never appear in process
+arguments, the plugin folder, the sidebar panel or the manager page's responses.
+
+Other files:
 
 | Location | Contents |
 | --- | --- |
-| macOS Keychain, service `orca-claude-accounts` | every account's token |
-| `~/.claude/settings.json` → `env.CLAUDE_CODE_OAUTH_TOKEN` | the token of the account in use (plain text, file mode 600) |
-| `~/.config/orca-claude-accounts/accounts.json` | labels, dates, last check, usage — no tokens |
-| `~/.config/orca-claude-accounts/server.json` | URL of the running manager page (mode 600) |
+| `~/.claude/settings.json` → `env.CLAUDE_CODE_OAUTH_TOKEN` | the token of the account **in use**, as plain text (that is where Claude Code reads it); file mode 600 on macOS/Linux |
+| `accounts.json` in the data folder¹ | labels, dates, last check, usage — no tokens |
+| `server.json` in the data folder¹ | URL of the running manager page (mode 600) |
 
-Tokens are passed to `security` on stdin, so they never appear in `ps`.
+¹ `~/.config/orca-claude-accounts` on macOS/Linux (`$XDG_CONFIG_HOME` respected),
+`%APPDATA%\orca-claude-accounts` on Windows.
 
 ## Manage accounts page
 
@@ -96,8 +130,8 @@ Tokens are passed to `security` on stdin, so they never appear in `ps`.
   an account signed in on this Mac with `/login` (Claude Code or Orca); otherwise
   it shows the organization id.
 - **Theme**: the page has no colors of its own. It reads the design tokens from the
-  installed Orca (`Orca.app/Contents/Resources/app.asar`) and follows your Orca
-  theme and font.
+  installed Orca (its `resources/app.asar`) and follows your Orca theme and font;
+  without a readable Orca install it falls back to system colors.
 
 Orca panels can't exchange data with a plugin's worker (panel CSP is
 `connect-src 'none'`), so the page is served by a small local server running as its
@@ -136,6 +170,8 @@ claude-accounts rm 2
   points Claude Code at a different config dir and this token is ignored.
 - Remove any `CLAUDE_CODE_OAUTH_TOKEN` exported in your shell profile.
 - Orca asks you to approve the plugin again whenever its shortcuts change.
+- Desktop notifications from the manager page use `osascript` (macOS) and
+  `notify-send` (Linux); Windows shows the page's own message instead.
 - A notification warns when a token is within 14 days of its one-year expiry
   (counted from when it was added or last updated).
 

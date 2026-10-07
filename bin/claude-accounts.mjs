@@ -3,6 +3,7 @@
 import { createInterface } from 'node:readline'
 import { openUrl } from '../lib/open-in-orca.mjs'
 import { syncPanel } from '../lib/panel.mjs'
+import { BACKEND_LABELS } from '../lib/secrets.mjs'
 import { ensureManagerServer } from '../lib/server-process.mjs'
 import {
   accountRow,
@@ -91,7 +92,7 @@ async function main([command, arg, ...rest]) {
     case 'add': {
       const label = need([arg, ...rest].join(' ').trim(), 'claude-accounts add <label>')
       const account = await addAccount(label, await readToken())
-      console.log(`Added "${account.label}" (token stored in Keychain). Switch with: claude-accounts use ${(await status()).accounts.length}`)
+      console.log(`Added "${account.label}" (token stored in the ${BACKEND_LABELS[account.secretBackend] ?? account.secretBackend}). Switch with: claude-accounts use ${(await status()).accounts.length}`)
       return
     }
     case 'use':

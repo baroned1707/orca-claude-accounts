@@ -528,7 +528,7 @@
             autocomplete="off"
             spellcheck="false"
           />
-          <span class="hint">Checked with Anthropic before saving (uses no quota), then stored in the macOS Keychain. It is never shown again.</span>
+          <span class="hint">Checked with Anthropic before saving (uses no quota), then kept in your system's secret store. It is never shown again.</span>
         </div>
         <label class="check" id="f-activate"><input id="i-activate" type="checkbox" checked /> Switch to it now</label>
         <div class="error" id="d-error"></div>
@@ -762,7 +762,14 @@
           var expiryClass = account.daysLeft < 0 ? ' bad' : account.daysLeft <= 14 ? ' warn' : ''
           meta.appendChild(el('span', 'badge' + expiryClass, account.expiry))
           meta.appendChild(checkBadge(account.lastCheck))
-          meta.appendChild(el('span', '', 'Token updated ' + new Date(account.tokenUpdatedAt).toLocaleDateString()))
+          if (account.storage === 'file') {
+            var plain = el('span', 'badge warn', '⚠ Stored in a plain file')
+            plain.title = 'No system keyring was available, so this token is in a file readable only by your user. Install/unlock a keyring (GNOME Keyring, KWallet) and update the token to move it.'
+            meta.appendChild(plain)
+          }
+          var updated = el('span', '', 'Token updated ' + new Date(account.tokenUpdatedAt).toLocaleDateString())
+          if (account.storageLabel) updated.title = 'Stored in: ' + account.storageLabel
+          meta.appendChild(updated)
           info.appendChild(meta)
           info.appendChild(usageBlock(account.usage))
           row.appendChild(info)
