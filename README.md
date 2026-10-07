@@ -76,16 +76,16 @@ Choose **one** of the two options.
 2. Choose to install a plugin from **Git** and enter this URL **including the `#` part**:
 
    ```
-   https://github.com/baroned1707/orca-claude-accounts.git#v0.11.3
+   https://github.com/baroned1707/orca-claude-accounts.git#v0.11.4
    ```
 
-   The `#v0.11.3` pins the exact release; Orca requires a tag or commit after `#`.
+   The `#v0.11.4` pins the exact release; Orca requires a tag or commit after `#`.
 3. Enable **Claude Accounts** and approve its permission (it only shows notifications).
 
 ### Option B — developer path (live sidebar panel, easy updates)
 
 ```sh
-git clone --branch v0.11.3 https://github.com/baroned1707/orca-claude-accounts.git
+git clone --branch v0.11.4 https://github.com/baroned1707/orca-claude-accounts.git
 cd orca-claude-accounts
 npm link        # optional: adds the `claude-accounts` command (Node.js 18+)
 ```
@@ -165,7 +165,15 @@ Open Orca's right sidebar (`⌘L` / `Ctrl+L`) and click the **bot** icon:
 <img src="docs/images/sidebar-panel.png" alt="Sidebar panel" width="320">
 
 It shows the account in use, every account with its token age and last usage, and
-the shortcuts. The panel is **read-only** — Orca doesn't let plugin panels run
+the shortcuts for your platform (`⌘` on macOS, `Ctrl` on Windows/Linux).
+
+**On Orca mobile and tablets** the panel adapts: larger text and touch-sized rows,
+two columns on wide screens, safe-area padding, and — since there is no keyboard —
+a *View only on this device* note instead of shortcuts. Make changes from Orca on
+your computer.
+
+<img src="docs/images/sidebar-panel-mobile.png" alt="Sidebar panel on a phone" width="300">
+ The panel is **read-only** — Orca doesn't let plugin panels run
 commands — so use `⌘⇧M` to change anything.
 
 It updates live only with the **developer path** install (Option B): the plugin

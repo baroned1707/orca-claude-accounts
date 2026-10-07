@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <style>
       /* Colors come from the design tokens Orca injects into plugin panels. */
       * {
@@ -21,7 +22,10 @@
         -webkit-font-smoothing: antialiased;
       }
       body {
-        padding: 12px;
+        /* Notches and home indicators when Orca mobile shows the panel full screen. */
+        padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+          max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+        overflow-x: hidden;
       }
       h1 {
         margin: 0 0 10px;
@@ -63,9 +67,11 @@
         background: var(--primary);
         box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
       }
+      /* One column in a sidebar; more columns when the panel is wide (tablet). */
       .list {
         display: grid;
-        gap: 2px;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+        gap: 2px 10px;
       }
       .row {
         position: relative;
@@ -246,6 +252,68 @@
         font-size: 10.5px;
         color: var(--muted-foreground);
       }
+      .touch-hint {
+        display: none;
+      }
+      .cta-row {
+        flex-wrap: wrap;
+      }
+
+      /* Very narrow panels: stack the two usage bars. */
+      @media (max-width: 250px) {
+        .usage {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
+      }
+
+      /* Touch screens (Orca mobile, tablets): no keyboard shortcuts to show,
+         larger text and hit areas. */
+      @media (hover: none) and (pointer: coarse) {
+        html,
+        body {
+          font-size: 14px;
+        }
+        h1 {
+          font-size: 12px;
+        }
+        .current .v {
+          font-size: 15px;
+        }
+        .row {
+          padding: 11px 10px;
+        }
+        .slot {
+          width: 22px;
+          height: 22px;
+          font-size: 11px;
+        }
+        .badge {
+          height: 20px;
+          font-size: 11.5px;
+        }
+        .mini-head {
+          font-size: 12px;
+        }
+        .mini-track {
+          height: 6px;
+        }
+        .keyboard-only,
+        .keys {
+          display: none;
+        }
+        .touch-hint {
+          display: grid;
+          gap: 3px;
+        }
+        .touch-hint span {
+          opacity: 0.8;
+        }
+        .touch-hint em {
+          font-style: normal;
+          font-weight: 600;
+        }
+      }
     </style>
   </head>
   <body>
@@ -255,14 +323,19 @@
       <div class="k">In use</div>
       <div class="v"><span class="dot" id="dot"></span><span id="current">Default login (no token)</span></div>
     </div>
-    <!-- Panels can't run plugin commands, so the way in is a shortcut, shown first. -->
+    <!-- Panels can't run plugin commands, so the way in is a shortcut, shown first.
+         Key labels are filled in per platform below. -->
     <div class="cta">
-      <div class="cta-row"><strong>Add, edit or switch</strong><kbd>⌘⇧M</kbd></div>
-      <div class="cta-row"><span>Switch to next account</span><kbd>⌘⌥N</kbd></div>
+      <div class="cta-row keyboard-only"><strong>Add, edit or switch</strong><kbd data-key="manage">⌘⇧M</kbd></div>
+      <div class="cta-row keyboard-only"><span>Switch to next account</span><kbd data-key="next">⌘⌥N</kbd></div>
+      <div class="touch-hint">
+        <strong>View only on this device.</strong>
+        <span>Add, edit or switch accounts from Orca on your computer: <em>Claude Account: Manage Accounts…</em></span>
+      </div>
     </div>
     <div class="list" id="list"></div>
     <div class="keys">
-      <div><span>All commands: ⌘J → “Claude Account”</span></div>
+      <div><span>All commands: <span data-key="palette">⌘J</span> → “Claude Account”</span></div>
     </div>
     <div class="stamp" id="stamp"></div>
 
@@ -273,6 +346,16 @@
       try {
         data = JSON.parse(document.getElementById('data').textContent)
       } catch (_) {}
+
+      // Orca's defaults: Mod is ⌘ on macOS and Ctrl elsewhere; the palette is
+      // ⌘J on macOS but Ctrl+Shift+J on Windows/Linux.
+      var MAC = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent)
+      var KEYS = MAC
+        ? { manage: '⌘⇧M', next: '⌘⌥N', palette: '⌘J' }
+        : { manage: 'Ctrl+Shift+M', next: 'Ctrl+Alt+N', palette: 'Ctrl+Shift+J' }
+      Array.prototype.forEach.call(document.querySelectorAll('[data-key]'), function (node) {
+        node.textContent = KEYS[node.getAttribute('data-key')]
+      })
 
       var LIFETIME_DAYS = 365
       var WARN_DAYS = 14
@@ -334,7 +417,7 @@
           Date.parse(data.generatedAt) > 0 ? 'Updated ' + new Date(data.generatedAt).toLocaleString() : ''
 
         if (!data.accounts.length) {
-          list.appendChild(el('div', 'empty', 'No accounts yet. Press ⌘⇧M to add one.'))
+          list.appendChild(el('div', 'empty', 'No accounts yet. Use Manage accounts (' + KEYS.manage + ') to add one.'))
           return
         }
         data.accounts.forEach(function (account) {
