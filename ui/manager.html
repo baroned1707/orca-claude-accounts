@@ -2,7 +2,7 @@
 <html lang="en" class="__ORCA_THEME__">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Claude Accounts</title>
     <meta name="orca-theme-source" content="__ORCA_THEME_SOURCE__" />
     <!-- Design tokens read at runtime from the installed Orca app (see lib/orca-theme.mjs). -->
@@ -463,13 +463,76 @@
       #toast.err {
         color: var(--destructive);
       }
-      @media (max-width: 560px) {
+      /* Phones, and Orca mobile's "mobile" view of this tab. */
+      @media (max-width: 640px) {
+        main {
+          padding: max(16px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+            max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+        }
+        header {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 12px;
+        }
+        .header-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+        .header-actions #add {
+          grid-column: 1 / -1;
+          order: -1;
+        }
         .row {
           flex-wrap: wrap;
+          align-items: flex-start;
+        }
+        .info {
+          flex-basis: calc(100% - 40px);
+        }
+        .usage {
+          gap: 10px 12px;
+        }
+        .ubar {
+          flex: 1 1 130px;
+          width: auto;
+        }
+        .usage-at {
+          flex-basis: 100%;
         }
         .actions {
           width: 100%;
           justify-content: flex-end;
+          flex-wrap: wrap;
+        }
+        .actions button:not(.icon) {
+          margin-right: auto;
+        }
+        .footer {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        dialog {
+          width: calc(100vw - 24px);
+        }
+      }
+
+      /* Touch screens: finger-sized targets, and no zoom-on-focus in inputs. */
+      @media (hover: none) and (pointer: coarse) {
+        button {
+          min-height: 40px;
+        }
+        button.icon {
+          width: 40px;
+          height: 40px;
+        }
+        input[type='text'],
+        input[type='password'] {
+          height: 42px;
+          font-size: 16px;
+        }
+        .check {
+          min-height: 40px;
         }
       }
     </style>
@@ -489,6 +552,11 @@
           </button>
         </div>
       </header>
+
+      <div class="alert offline" id="offline" role="status">
+        Reconnecting to the account manager… If this stays, run <strong>Claude Account: Manage Accounts…</strong>
+        in Orca on your computer.
+      </div>
 
       <div class="alert" id="drift">
         <code>~/.claude/settings.json</code> holds a different token than the account in use. Switch again
@@ -815,10 +883,25 @@
             state = next
             render()
           })
+          .then(function () {
+            $('offline').className = 'alert offline'
+          })
           .catch(function () {
-            toast('Account manager stopped. Reopen it from Orca (⌘⇧M).', true)
+            // The server restarts on the same address (plugin update, idle
+            // exit): keep retrying instead of giving up.
+            $('offline').className = 'alert offline show'
           })
       }
+
+      // Keep the server alive while this tab exists, even in the background
+      // (e.g. waiting in Orca mobile's tab list), and notice when it is back.
+      setInterval(function () {
+        if (document.hidden) request('GET', 'ping').catch(function () {})
+        else if ($('offline').classList.contains('show')) refresh()
+      }, 60 * 1000)
+      setInterval(function () {
+        if (!document.hidden && $('offline').classList.contains('show')) refresh()
+      }, 5000)
 
       function act(action, body) {
         if (busy) return Promise.resolve()

@@ -1,6 +1,6 @@
 {
   "name": "orca-claude-accounts",
-  "version": "0.11.4",
+  "version": "0.12.0",
   "private": true,
   "description": "Orca plugin + CLI to switch Claude Code between setup-token accounts",
   "type": "module",

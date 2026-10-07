@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Detached account manager server (started by lib/server-process.mjs). Exits
-// on its own after 30 minutes without requests; the open page polls, so it
+// on its own after 12 hours without requests; an open page pings, so it
 // stays up while the tab is open.
-import { readFileSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { syncPanel } from '../lib/panel.mjs'
 import { notifyDesktop } from '../lib/platform.mjs'
@@ -15,7 +15,29 @@ const log = (message) => console.error(`${new Date().toISOString()} ${message}`)
 // desktop's own (macOS, Linux; on Windows the page's message is enough).
 const notify = notifyDesktop
 
+const statePath = serverStatePath()
+let previous = {}
+try {
+  previous = JSON.parse(readFileSync(statePath, 'utf8'))
+} catch {
+  // first start
+}
+
+// v0.11.3 and older stored only the URL; take the address from it.
+if (previous.url && !(previous.port && previous.secret)) {
+  try {
+    const old = new URL(previous.url)
+    previous.port = Number(old.port)
+    previous.secret = old.pathname.split('/')[1]
+  } catch {
+    // unreadable: start fresh
+  }
+}
+
 const server = createManagerServer({
+  // Same address as last time, so open tabs (also on Orca mobile) reconnect.
+  port: previous.port,
+  secret: previous.secret,
   keepAlive: true,
   log,
   onChange: () => syncPanel(log),
@@ -28,13 +50,16 @@ const server = createManagerServer({
 })
 
 const url = await server.start()
-const statePath = serverStatePath()
-await writeFile(statePath, JSON.stringify({ pid: process.pid, url, code: await codeFingerprint() }), { mode: 0o600 })
+const { port, pathname } = new URL(url)
+const state = { pid: process.pid, url, port: Number(port), secret: pathname.split('/')[1], code: await codeFingerprint() }
+await writeFile(statePath, JSON.stringify(state), { mode: 0o600 })
 const cleanup = () => {
   try {
-    // A newer server may have replaced the state file; only remove our own.
+    // A newer server may have replaced the state file; only touch our own.
     if (JSON.parse(readFileSync(statePath, 'utf8')).pid !== process.pid) return
-    rmSync(statePath)
+    // Keep the address for the next start; only mark it as not running.
+    const { pid, ...address } = state
+    writeFileSync(statePath, JSON.stringify(address), { mode: 0o600 })
   } catch {
     // already gone
   }
@@ -42,3 +67,5 @@ const cleanup = () => {
 process.on('exit', cleanup)
 for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(signal, () => process.exit(0))
 log(`listening (pid ${process.pid})`)
+// The sidebar panel shows this address for Orca mobile.
+await syncPanel(log)

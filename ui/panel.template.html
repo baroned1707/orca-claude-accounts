@@ -224,6 +224,43 @@
         background: color-mix(in srgb, var(--primary-foreground) 12%, transparent);
         color: var(--primary-foreground);
       }
+      .phone {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        color: var(--muted-foreground);
+      }
+      .phone h2 {
+        margin: 0 0 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .phone p {
+        margin: 0 0 8px;
+      }
+      .phone strong,
+      .phone em {
+        color: var(--foreground);
+        font-style: normal;
+        font-weight: 600;
+      }
+      .phone code {
+        display: block;
+        padding: 7px 8px;
+        border-radius: calc(var(--radius, 10px) - 4px);
+        background: var(--muted);
+        color: var(--foreground);
+        font: 500 11px ui-monospace, Menlo, monospace;
+        overflow-wrap: anywhere;
+        user-select: all;
+        -webkit-user-select: all;
+      }
+      .phone-tip {
+        margin-top: 8px !important;
+        font-size: 11px;
+      }
       .keys {
         margin-top: 14px;
         padding-top: 12px;
@@ -329,11 +366,20 @@
       <div class="cta-row keyboard-only"><strong>Add, edit or switch</strong><kbd data-key="manage">⌘⇧M</kbd></div>
       <div class="cta-row keyboard-only"><span>Switch to next account</span><kbd data-key="next">⌘⌥N</kbd></div>
       <div class="touch-hint">
-        <strong>View only on this device.</strong>
-        <span>Add, edit or switch accounts from Orca on your computer: <em>Claude Account: Manage Accounts…</em></span>
+        <strong>View only here.</strong>
+        <span>To add, edit or switch, open the <em>Claude Accounts</em> browser tab — see below.</span>
       </div>
     </div>
     <div class="list" id="list"></div>
+    <section class="phone" id="phone">
+      <h2>Use it from Orca mobile</h2>
+      <p>
+        Open this worktree's <strong>Claude Accounts</strong> browser tab on your phone (it is created by
+        <em>Manage Accounts…</em> on your computer), or type this address in any Orca browser tab:
+      </p>
+      <code id="manager-url"></code>
+      <p class="phone-tip">Tip: switch the tab to the mobile view for a phone-sized layout.</p>
+    </section>
     <div class="keys">
       <div><span>All commands: <span data-key="palette">⌘J</span> → “Claude Account”</span></div>
     </div>
@@ -413,6 +459,8 @@
         document.getElementById('current').textContent = active ? active.label : 'Default login (no token)'
         document.getElementById('dot').className = 'dot' + (active ? ' on' : '')
         document.getElementById('drift').hidden = !data.drift
+        if (data.managerUrl) document.getElementById('manager-url').textContent = data.managerUrl
+        else document.getElementById('phone').hidden = true
         document.getElementById('stamp').textContent =
           Date.parse(data.generatedAt) > 0 ? 'Updated ' + new Date(data.generatedAt).toLocaleString() : ''
 

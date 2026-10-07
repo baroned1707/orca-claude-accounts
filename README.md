@@ -76,16 +76,16 @@ Choose **one** of the two options.
 2. Choose to install a plugin from **Git** and enter this URL **including the `#` part**:
 
    ```
-   https://github.com/baroned1707/orca-claude-accounts.git#v0.11.4
+   https://github.com/baroned1707/orca-claude-accounts.git#v0.12.0
    ```
 
-   The `#v0.11.4` pins the exact release; Orca requires a tag or commit after `#`.
+   The `#v0.12.0` pins the exact release; Orca requires a tag or commit after `#`.
 3. Enable **Claude Accounts** and approve its permission (it only shows notifications).
 
 ### Option B — developer path (live sidebar panel, easy updates)
 
 ```sh
-git clone --branch v0.11.4 https://github.com/baroned1707/orca-claude-accounts.git
+git clone --branch v0.12.0 https://github.com/baroned1707/orca-claude-accounts.git
 cd orca-claude-accounts
 npm link        # optional: adds the `claude-accounts` command (Node.js 18+)
 ```
@@ -169,10 +169,30 @@ the shortcuts for your platform (`⌘` on macOS, `Ctrl` on Windows/Linux).
 
 **On Orca mobile and tablets** the panel adapts: larger text and touch-sized rows,
 two columns on wide screens, safe-area padding, and — since there is no keyboard —
-a *View only on this device* note instead of shortcuts. Make changes from Orca on
-your computer.
+a note pointing to the Manage page instead of shortcuts.
 
-<img src="docs/images/sidebar-panel-mobile.png" alt="Sidebar panel on a phone" width="300">
+## 7b. Use it from your phone (Orca mobile)
+
+Orca mobile shows your computer's browser tabs live, so the **Manage accounts
+page works from your phone** — add, switch, refresh usage, everything.
+
+1. On your computer, open it once with `⌘⇧M` (or *Claude Account: Manage Accounts…*).
+   This creates a **Claude Accounts** browser tab in the current worktree.
+2. On your phone, open that worktree in Orca and pick the **Claude Accounts** tab.
+   Switch the tab to Orca's **mobile view** for a phone-sized layout.
+3. No tab? Open any browser tab in Orca mobile and type the address shown under
+   **Use it from Orca mobile** in the sidebar panel.
+
+The address stays the same across restarts and updates, so the tab keeps working;
+`⌘⇧M` reuses that tab instead of opening another. While the tab exists the page keeps
+the manager running (it stops after 12 hours with no open tab); if it stopped, the
+page shows *Reconnecting…* until you run *Manage Accounts…* on the computer again.
+
+<p>
+  <img src="docs/images/manage-mobile.png" alt="Manage accounts on a phone" width="300">
+  &nbsp;
+  <img src="docs/images/sidebar-panel-mobile.png" alt="Sidebar panel on a phone" width="300">
+</p>
  The panel is **read-only** — Orca doesn't let plugin panels run
 commands — so use `⌘⇧M` to change anything.
 
@@ -207,7 +227,7 @@ claude-accounts rm 2
 | *Could not run the plugin command* | **Settings → Plugins → Claude Accounts**: approve the plugin again (needed after shortcut changes), then reload it. |
 | `⌘⇧M` opens a markdown tab | Orca's *New markdown tab* uses the same key. Change one of them in **Settings → Shortcuts**. |
 | The page opened in my web browser | Orca needs an open worktree to show it as a tab. |
-| *The account manager is not running* | It stops after 30 idle minutes. Press `⌘⇧M` again. |
+| *Reconnecting…* / *The account manager is not running* | It stops after 12 hours without an open tab. Run *Manage Accounts…* (`⌘⇧M`) on the computer; open tabs reconnect by themselves. |
 | *token rejected by Anthropic* | The token is wrong, revoked or expired. Create a new one (step 2). |
 | *this token is already saved as …* | You pasted a token that is already stored — check your clipboard holds the new token. |
 | *same organization as …* | Fine on Team/Enterprise plans. Otherwise you probably ran `claude setup-token` while the browser was signed in to that other account. |
@@ -234,7 +254,8 @@ it while running**, so new and running sessions use the selected account
 - **Manage page** — plugin panels can't exchange data with the plugin, so the page
   is served by a small local server running as its own process: bound to
   `127.0.0.1`, behind a random 256-bit URL secret, `Host`-checked, JSON-only writes
-  with a custom header, never returns tokens, exits after 30 idle minutes.
+  with a custom header, never returns tokens; it keeps the same address across
+  restarts and exits after 12 hours without an open page.
 - **Theme** — read at runtime from the installed Orca's `resources/app.asar`, so it
   matches your Orca version, theme and font; system colors if Orca can't be read.
 
