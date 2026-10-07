@@ -1,0 +1,21 @@
+{
+  "name": "orca-claude-accounts",
+  "version": "0.10.0",
+  "private": true,
+  "description": "Orca plugin + CLI to switch Claude Code between setup-token accounts",
+  "type": "module",
+  "bin": {
+    "claude-accounts": "bin/claude-accounts.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baroned1707/orca-claude-accounts.git"
+  }
+}

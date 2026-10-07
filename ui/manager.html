@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="en" class="__ORCA_THEME__">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claude Accounts</title>
+    <meta name="orca-theme-source" content="__ORCA_THEME_SOURCE__" />
+    <!-- Design tokens read at runtime from the installed Orca app (see lib/orca-theme.mjs). -->
+    <style id="orca-tokens">
+      /*__ORCA_TOKENS__*/
+    </style>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      :root.dark {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      /* Author display rules (grid/flex) would otherwise override the attribute. */
+      [hidden] {
+        display: none !important;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--foreground);
+        font-family: var(--font-sans);
+        font-size: 13px;
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 28px 20px 48px;
+      }
+      header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .sub {
+        margin: 4px 0 0;
+        color: var(--muted-foreground);
+      }
+      .current {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        margin-bottom: 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+      }
+      .current strong {
+        font-weight: 600;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        flex: none;
+        border-radius: 50%;
+        background: var(--muted-foreground);
+      }
+      .dot.on {
+        background: var(--status-success, var(--primary));
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-success, var(--primary)) 22%, transparent);
+      }
+      .list {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        background: var(--card);
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px 10px 14px;
+        border-top: 1px solid var(--border);
+        position: relative;
+      }
+      .row:first-child {
+        border-top: 0;
+      }
+      .row:hover {
+        background: color-mix(in srgb, var(--accent) 55%, transparent);
+      }
+      .row.active {
+        background: color-mix(in srgb, var(--primary) 7%, transparent);
+      }
+      .row.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 8px;
+        bottom: 8px;
+        width: 3px;
+        border-radius: 0 3px 3px 0;
+        background: var(--primary);
+      }
+      .slot {
+        width: 22px;
+        height: 22px;
+        flex: none;
+        display: grid;
+        place-items: center;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        color: var(--muted-foreground);
+        font: 500 11px var(--font-mono);
+      }
+      .row.active .slot {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .info {
+        min-width: 0;
+        flex: 1;
+      }
+      .label {
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .who {
+        margin-top: 1px;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-top: 3px;
+        color: var(--muted-foreground);
+        font-size: 12px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 20px;
+        padding: 0 7px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .usage {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 14px;
+        margin-top: 8px;
+      }
+      .usage-empty,
+      .usage-at {
+        font-size: 11px;
+        color: var(--muted-foreground);
+      }
+      .ubar {
+        width: 150px;
+      }
+      .ubar-head {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--muted-foreground);
+      }
+      .ubar-pct {
+        font-weight: 600;
+        color: var(--foreground);
+        font-variant-numeric: tabular-nums;
+      }
+      .ubar-pct.high {
+        color: var(--status-warning, var(--foreground));
+      }
+      .ubar-pct.full {
+        color: var(--destructive);
+      }
+      .ubar-track {
+        height: 5px;
+        margin: 3px 0 2px;
+        border-radius: 999px;
+        background: var(--muted);
+        overflow: hidden;
+      }
+      .ubar-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: var(--primary);
+      }
+      .ubar-fill.high {
+        background: var(--status-warning, var(--primary));
+      }
+      .ubar-fill.full {
+        background: var(--destructive);
+      }
+      .ubar-reset {
+        font-size: 10.5px;
+        color: var(--muted-foreground);
+        white-space: nowrap;
+      }
+      .header-actions {
+        display: flex;
+        gap: 8px;
+        flex: none;
+      }
+      .badge.ok {
+        color: var(--status-success, var(--foreground));
+        border-color: color-mix(in srgb, var(--status-success, var(--foreground)) 40%, transparent);
+      }
+      .badge.inuse {
+        border-color: transparent;
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .badge.warn,
+      .badge.unknown {
+        color: var(--status-warning, var(--muted-foreground));
+        border-color: color-mix(in srgb, var(--status-warning, var(--muted-foreground)) 40%, transparent);
+      }
+      .badge.bad {
+        color: var(--destructive);
+        border-color: color-mix(in srgb, var(--destructive) 45%, transparent);
+      }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex: none;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 30px;
+        padding: 0 12px;
+        border-radius: calc(var(--radius) - 2px);
+        border: 1px solid var(--border);
+        background: var(--background);
+        font-weight: 500;
+        white-space: nowrap;
+        transition:
+          background 0.12s,
+          border-color 0.12s,
+          opacity 0.12s;
+      }
+      button:hover {
+        background: var(--accent);
+        color: var(--accent-foreground);
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 1px;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      button.primary {
+        background: var(--primary);
+        color: var(--primary-foreground);
+        border-color: var(--primary);
+      }
+      button.primary:hover {
+        opacity: 0.9;
+      }
+      button.ghost {
+        border-color: transparent;
+        background: transparent;
+      }
+      button.icon {
+        width: 30px;
+        padding: 0;
+        border-color: transparent;
+        background: transparent;
+        color: var(--muted-foreground);
+      }
+      button.icon:hover {
+        color: var(--accent-foreground);
+      }
+      /* Mirrors Orca's destructive variant: bg-destructive text-white, dark:bg-destructive/60. */
+      button.danger {
+        background: var(--destructive);
+        border-color: transparent;
+        color: white;
+      }
+      :root.dark button.danger {
+        background: color-mix(in srgb, var(--destructive) 60%, transparent);
+      }
+      button.icon.danger-hover:hover {
+        color: var(--destructive);
+      }
+      svg {
+        width: 15px;
+        height: 15px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .empty {
+        padding: 34px 20px;
+        text-align: center;
+        color: var(--muted-foreground);
+      }
+      .empty strong {
+        display: block;
+        color: var(--foreground);
+        margin-bottom: 4px;
+      }
+      .footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+        color: var(--muted-foreground);
+        font-size: 12px;
+      }
+      .alert {
+        display: none;
+        margin-bottom: 14px;
+        padding: 10px 12px;
+        border-radius: var(--radius);
+        border: 1px solid color-mix(in srgb, var(--status-warning, var(--muted-foreground)) 40%, transparent);
+        color: var(--status-warning, var(--muted-foreground));
+      }
+      .alert.show {
+        display: block;
+      }
+      code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        padding: 1px 5px;
+        border-radius: 5px;
+        background: var(--muted);
+        color: var(--foreground);
+      }
+      dialog {
+        width: min(440px, calc(100vw - 32px));
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) + 2px);
+        background: var(--popover);
+        color: var(--popover-foreground);
+        box-shadow: 0 16px 48px rgb(0 0 0 / 0.35);
+      }
+      dialog::backdrop {
+        background: rgb(0 0 0 / 0.5);
+      }
+      dialog form {
+        padding: 18px;
+      }
+      dialog h2 {
+        margin: 0 0 4px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      dialog p {
+        margin: 0 0 14px;
+        color: var(--muted-foreground);
+      }
+      .field {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .field label {
+        font-weight: 500;
+        font-size: 12px;
+      }
+      input[type='text'],
+      input[type='password'] {
+        height: 34px;
+        width: 100%;
+        padding: 0 10px;
+        border-radius: calc(var(--radius) - 2px);
+        border: 1px solid var(--input);
+        background: transparent;
+        color: var(--foreground);
+        font: inherit;
+      }
+      input[type='password'] {
+        font-family: var(--font-mono);
+      }
+      .check input {
+        accent-color: var(--primary);
+      }
+      .check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 4px 0 6px;
+      }
+      .hint {
+        font-size: 12px;
+        color: var(--muted-foreground);
+      }
+      .error {
+        min-height: 18px;
+        margin: 6px 0 0;
+        color: var(--destructive);
+        font-size: 12px;
+      }
+      .buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      #toast {
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+        transform: translate(-50%, 12px);
+        max-width: calc(100vw - 32px);
+        padding: 9px 14px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: var(--popover);
+        color: var(--popover-foreground);
+        box-shadow: 0 8px 28px rgb(0 0 0 / 0.25);
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 0.18s,
+          transform 0.18s;
+      }
+      #toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      #toast.err {
+        color: var(--destructive);
+      }
+      @media (max-width: 560px) {
+        .row {
+          flex-wrap: wrap;
+        }
+        .actions {
+          width: 100%;
+          justify-content: flex-end;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Claude Accounts</h1>
+          <p class="sub">Switch Claude Code between accounts. Running and new sessions follow the switch.</p>
+        </div>
+        <div class="header-actions">
+          <button id="usage-all" title="Read 5-hour and 7-day usage of every account (one tiny request each)">Refresh usage</button>
+          <button id="check-all" title="Ask Anthropic whether each token still works (uses no quota)">Check all</button>
+          <button class="primary" id="add">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>Add account
+          </button>
+        </div>
+      </header>
+
+      <div class="alert" id="drift">
+        <code>~/.claude/settings.json</code> holds a different token than the account in use. Switch again
+        to fix it.
+      </div>
+
+      <div class="current">
+        <span class="dot" id="current-dot"></span>
+        <div>In use: <strong id="current-label">…</strong></div>
+      </div>
+
+      <div class="list" id="list"></div>
+
+      <div class="footer">
+        <span
+          >Get a token: sign in to claude.ai with the account, run <code>claude setup-token</code>, copy the
+          <code>sk-ant-oat01-…</code> value.</span
+        >
+        <button class="ghost" id="off" hidden>Use default login</button>
+      </div>
+    </main>
+
+    <dialog id="dialog">
+      <form method="dialog" id="form">
+        <h2 id="d-title"></h2>
+        <p id="d-desc"></p>
+        <div class="field" id="f-label">
+          <label for="i-label">Label</label>
+          <input id="i-label" type="text" maxlength="80" placeholder="Work – me@company.com" autocomplete="off" />
+        </div>
+        <div class="field" id="f-token">
+          <label for="i-token">Token</label>
+          <input
+            id="i-token"
+            type="password"
+            placeholder="sk-ant-oat01-…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <span class="hint">Checked with Anthropic before saving (uses no quota), then stored in the macOS Keychain. It is never shown again.</span>
+        </div>
+        <label class="check" id="f-activate"><input id="i-activate" type="checkbox" checked /> Switch to it now</label>
+        <div class="error" id="d-error"></div>
+        <div class="buttons">
+          <button type="button" id="d-cancel">Cancel</button>
+          <button type="submit" class="primary" id="d-ok"></button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" role="status"></div>
+
+    <script>
+      'use strict'
+      var API = location.pathname.replace(/\/?$/, '/') + 'api/'
+      var state = null
+      var busy = false
+      var themeSetting = document.documentElement.className
+      var media = window.matchMedia('(prefers-color-scheme: dark)')
+      var $ = function (id) {
+        return document.getElementById(id)
+      }
+
+      function applyTheme(setting) {
+        if (setting) themeSetting = setting
+        var dark = themeSetting === 'dark' || (themeSetting !== 'light' && media.matches)
+        document.documentElement.className = dark ? 'dark' : ''
+      }
+      media.addEventListener('change', function () {
+        applyTheme()
+      })
+      applyTheme()
+
+      function request(method, action, body) {
+        return fetch(API + action, {
+          method: method,
+          headers: method === 'POST' ? { 'Content-Type': 'application/json', 'X-Claude-Accounts': '1' } : {},
+          body: body ? JSON.stringify(body) : undefined
+        }).then(function (response) {
+          return response.json().then(function (json) {
+            if (!response.ok || json.ok === false) throw new Error(json.error || 'request failed')
+            return json
+          })
+        }, function () {
+          // fetch() only rejects when the server is unreachable.
+          throw new Error('The account manager is not running. Reopen it with ⌘⇧M.')
+        })
+      }
+
+      var toastTimer
+      function toast(text, isError) {
+        var el = $('toast')
+        el.textContent = text
+        el.className = 'show' + (isError ? ' err' : '')
+        clearTimeout(toastTimer)
+        toastTimer = setTimeout(function () {
+          el.className = ''
+        }, 3200)
+      }
+
+      function icon(path) {
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        svg.setAttribute('viewBox', '0 0 24 24')
+        svg.innerHTML = path
+        return svg
+      }
+      var ICONS = {
+        pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+        key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>',
+        trash: '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+        shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>'
+      }
+
+      function el(tag, className, text) {
+        var node = document.createElement(tag)
+        if (className) node.className = className
+        if (text !== undefined) node.textContent = text
+        return node
+      }
+
+      function iconButton(name, title, onClick, extraClass) {
+        var button = el('button', 'icon' + (extraClass ? ' ' + extraClass : ''))
+        button.title = title
+        button.setAttribute('aria-label', title)
+        button.appendChild(icon(ICONS[name]))
+        button.addEventListener('click', onClick)
+        return button
+      }
+
+      function checkBadge(check) {
+        if (!check) return el('span', 'badge', 'Not checked')
+        var when = 'Checked ' + new Date(check.at).toLocaleString() + ' — ' + check.message
+        var badge =
+          check.state === 'valid'
+            ? el('span', 'badge ok', '✓ Valid')
+            : check.state === 'invalid'
+              ? el('span', 'badge bad', '✕ Invalid')
+              : el('span', 'badge warn', '? Unknown')
+        badge.title = when
+        return badge
+      }
+
+      function resetText(iso) {
+        if (!iso) return ''
+        var ms = Date.parse(iso) - Date.now()
+        if (ms <= 0) return 'resets now'
+        var h = Math.floor(ms / 3600000)
+        var m = Math.round((ms % 3600000) / 60000)
+        if (h >= 48) return 'resets ' + new Date(iso).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })
+        return 'resets in ' + (h ? h + 'h ' : '') + m + 'm'
+      }
+
+      function usageBar(name, win) {
+        var wrap = el('div', 'ubar')
+        var head = el('div', 'ubar-head')
+        head.appendChild(el('span', 'ubar-name', name))
+        var pct = win ? Math.min(win.percent, 100) : 0
+        var level = !win ? '' : win.percent >= 100 || win.status === 'rejected' ? ' full' : win.percent >= 80 ? ' high' : ''
+        head.appendChild(el('span', 'ubar-pct' + level, win ? win.percent + '%' : '—'))
+        wrap.appendChild(head)
+        var track = el('div', 'ubar-track')
+        var fill = el('div', 'ubar-fill' + level)
+        fill.style.width = pct + '%'
+        track.appendChild(fill)
+        wrap.appendChild(track)
+        wrap.appendChild(el('div', 'ubar-reset', win ? resetText(win.resetsAt) : ''))
+        return wrap
+      }
+
+      function usageBlock(usage) {
+        var block = el('div', 'usage')
+        if (!usage) {
+          block.appendChild(el('span', 'usage-empty', autoUsageRunning ? 'Reading usage…' : 'Usage not read yet'))
+          return block
+        }
+        if (!usage.ok) {
+          block.appendChild(el('span', 'usage-empty', 'Usage unavailable: ' + usage.error))
+          return block
+        }
+        block.appendChild(usageBar('5-hour', usage.fiveHour))
+        block.appendChild(usageBar('7-day', usage.sevenDay))
+        var stamp = el('span', 'usage-at', (usage.status === 'rejected' ? 'Limit reached · ' : '') + 'read ' + new Date(usage.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+        block.appendChild(stamp)
+        return block
+      }
+
+      // Usage shows by default: read it when the page opens and keep it fresh
+      // while the page is visible. Each read is one tiny request per account.
+      var USAGE_MAX_AGE_MS = 5 * 60 * 1000
+      var autoUsageRunning = false
+      function usageIsStale() {
+        if (!state || !state.accounts.length) return false
+        return state.accounts.some(function (a) {
+          return !a.usage || Date.now() - Date.parse(a.usage.at) > USAGE_MAX_AGE_MS
+        })
+      }
+      function autoUsage() {
+        if (autoUsageRunning || busy || document.hidden || !usageIsStale()) return
+        autoUsageRunning = true
+        render()
+        request('POST', 'usage', {})
+          .then(function (result) {
+            state = result.state
+          })
+          .catch(function () {})
+          .finally(function () {
+            autoUsageRunning = false
+            render()
+          })
+      }
+
+      function runUsage(body) {
+        toast('Reading usage…')
+        act('usage', body).catch(function (error) {
+          toast(error.message, true)
+        })
+      }
+
+      function runCheck(body) {
+        toast('Checking with Anthropic…')
+        act('check', body).catch(function (error) {
+          toast(error.message, true)
+        })
+      }
+
+      function render() {
+        if (!state) return
+        applyTheme(state.appearance && state.appearance.theme)
+        // Same mechanism as Orca's renderer: the user's font goes into --app-font-family.
+        if (state.appearance && state.appearance.appFontFamily) {
+          document.documentElement.style.setProperty('--app-font-family', state.appearance.appFontFamily)
+        } else {
+          document.documentElement.style.removeProperty('--app-font-family')
+        }
+        var active = state.accounts.filter(function (a) {
+          return a.active
+        })[0]
+        $('current-label').textContent = active ? active.label : 'Default login (no token)'
+        $('current-dot').className = 'dot' + (active ? ' on' : '')
+        $('off').hidden = !active
+        $('drift').className = 'alert' + (state.drift ? ' show' : '')
+
+        var list = $('list')
+        list.textContent = ''
+        if (!state.accounts.length) {
+          var empty = el('div', 'empty')
+          empty.appendChild(el('strong', '', 'No accounts yet'))
+          empty.appendChild(document.createTextNode('Add one with its claude setup-token token.'))
+          list.appendChild(empty)
+          return
+        }
+        state.accounts.forEach(function (account) {
+          var row = el('div', 'row' + (account.active ? ' active' : ''))
+          row.appendChild(el('div', 'slot', String(account.slot)))
+
+          var info = el('div', 'info')
+          var label = el('div', 'label', account.label)
+          label.title = account.label
+          info.appendChild(label)
+          if (account.email || account.orgId) {
+            var who = el('div', 'who', account.email || 'Org ' + account.orgId.slice(0, 8) + '… · email unknown')
+            who.title = account.email
+              ? 'Claude account of this token (organization ' + account.orgId + ')'
+              : 'This token belongs to organization ' + account.orgId + '. Its email is only known for accounts signed in on this Mac with /login.'
+            info.appendChild(who)
+          }
+          var meta = el('div', 'meta')
+          if (account.active) meta.appendChild(el('span', 'badge inuse', 'In use'))
+          var expiryClass = account.daysLeft < 0 ? ' bad' : account.daysLeft <= 14 ? ' warn' : ''
+          meta.appendChild(el('span', 'badge' + expiryClass, account.expiry))
+          meta.appendChild(checkBadge(account.lastCheck))
+          meta.appendChild(el('span', '', 'Token updated ' + new Date(account.tokenUpdatedAt).toLocaleDateString()))
+          info.appendChild(meta)
+          info.appendChild(usageBlock(account.usage))
+          row.appendChild(info)
+
+          var actions = el('div', 'actions')
+          if (!account.active) {
+            var switchButton = el('button', '', 'Switch')
+            switchButton.addEventListener('click', function () {
+              act('switch', { id: account.id }).catch(function (error) {
+                toast(error.message, true)
+              })
+            })
+            actions.appendChild(switchButton)
+          }
+          actions.appendChild(iconButton('gauge', 'Refresh usage', function () {
+            runUsage({ id: account.id })
+          }))
+          actions.appendChild(iconButton('shield', 'Check token', function () {
+            runCheck({ id: account.id })
+          }))
+          actions.appendChild(iconButton('pencil', 'Edit label', function () {
+            openDialog('rename', account)
+          }))
+          actions.appendChild(iconButton('key', 'Update token', function () {
+            openDialog('token', account)
+          }))
+          actions.appendChild(iconButton('trash', 'Remove', function () {
+            openDialog('remove', account)
+          }, 'danger-hover'))
+          row.appendChild(actions)
+          list.appendChild(row)
+        })
+      }
+
+      function refresh() {
+        return request('GET', 'state')
+          .then(function (next) {
+            state = next
+            render()
+          })
+          .catch(function () {
+            toast('Account manager stopped. Reopen it from Orca (⌘⇧M).', true)
+          })
+      }
+
+      function act(action, body) {
+        if (busy) return Promise.resolve()
+        busy = true
+        return request('POST', action, body)
+          .then(function (result) {
+            state = result.state
+            render()
+            toast(result.message)
+          })
+          .finally(function () {
+            busy = false
+          })
+      }
+
+      // ---------- dialog ----------
+      var dialogMode = null
+      var dialogAccount = null
+      var MODES = {
+        add: { title: 'Add account', desc: 'Give it a label you will recognise, then paste its token.', ok: 'Add account', fields: ['label', 'token', 'activate'] },
+        rename: { title: 'Edit label', desc: '', ok: 'Save', fields: ['label'] },
+        token: { title: 'Update token', desc: '', ok: 'Save token', fields: ['token'] },
+        remove: { title: 'Remove account', desc: '', ok: 'Remove', fields: [] }
+      }
+
+      function openDialog(mode, account) {
+        var spec = MODES[mode]
+        dialogMode = mode
+        dialogAccount = account || null
+        $('d-title').textContent = spec.title
+        $('d-desc').textContent =
+          mode === 'rename'
+            ? 'Only the label changes; the token stays.'
+            : mode === 'token'
+              ? 'Paste a new claude setup-token token for "' + account.label + '".'
+              : mode === 'remove'
+                ? 'Remove "' + account.label + '" and delete its token from the Keychain?' +
+                  (account.active ? ' It is in use: Claude Code will fall back to /login.' : '')
+                : spec.desc
+        $('f-label').hidden = spec.fields.indexOf('label') < 0
+        $('f-token').hidden = spec.fields.indexOf('token') < 0
+        $('f-activate').hidden = spec.fields.indexOf('activate') < 0
+        $('i-label').value = mode === 'rename' ? account.label : ''
+        $('i-token').value = ''
+        $('i-activate').checked = true
+        $('d-error').textContent = ''
+        $('d-ok').textContent = spec.ok
+        $('d-ok').className = mode === 'remove' ? 'danger' : 'primary'
+        $('dialog').showModal()
+        var focus = spec.fields.indexOf('label') >= 0 ? $('i-label') : spec.fields.indexOf('token') >= 0 ? $('i-token') : $('d-ok')
+        focus.focus()
+        if (mode === 'rename') focus.select()
+      }
+
+      function closeDialog() {
+        $('i-token').value = ''
+        $('dialog').close()
+      }
+
+      $('form').addEventListener('submit', function (event) {
+        event.preventDefault()
+        var id = dialogAccount && dialogAccount.id
+        var body =
+          dialogMode === 'add'
+            ? { label: $('i-label').value, token: $('i-token').value, activate: $('i-activate').checked }
+            : dialogMode === 'rename'
+              ? { id: id, label: $('i-label').value }
+              : { id: id, token: $('i-token').value }
+        if (dialogMode === 'remove') body = { id: id }
+        $('d-ok').disabled = true
+        if (dialogMode === 'add' || dialogMode === 'token') $('d-ok').textContent = 'Checking token…'
+        act(dialogMode, body)
+          .then(closeDialog)
+          .catch(function (error) {
+            $('d-error').textContent = error.message
+          })
+          .finally(function () {
+            $('d-ok').disabled = false
+            $('d-ok').textContent = MODES[dialogMode] ? MODES[dialogMode].ok : 'OK'
+          })
+      })
+      $('d-cancel').addEventListener('click', closeDialog)
+      $('dialog').addEventListener('close', function () {
+        $('i-token').value = ''
+      })
+
+      $('usage-all').addEventListener('click', function () {
+        runUsage({})
+      })
+      $('check-all').addEventListener('click', function () {
+        runCheck({})
+      })
+      $('add').addEventListener('click', function () {
+        openDialog('add')
+      })
+      $('off').addEventListener('click', function () {
+        act('off').catch(function (error) {
+          toast(error.message, true)
+        })
+      })
+
+      refresh().then(autoUsage)
+      setInterval(autoUsage, 60 * 1000)
+      // Follow Orca theme changes and edits made from the CLI or palette commands.
+      setInterval(function () {
+        if (!document.hidden && !$('dialog').open) refresh()
+      }, 3000)
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) refresh().then(autoUsage)
+      })
+    </script>
+  </body>
+</html>

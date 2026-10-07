@@ -1,0 +1,360 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      /* Colors come from the design tokens Orca injects into plugin panels. */
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--foreground);
+        font-family: var(--panel-font, -apple-system, BlinkMacSystemFont, sans-serif);
+        font-size: 12px;
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+      }
+      body {
+        padding: 12px;
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+      }
+      .current {
+        padding: 10px 11px;
+        margin-bottom: 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius, 10px);
+        background: var(--card);
+        color: var(--card-foreground);
+      }
+      .current .k {
+        font-size: 11px;
+        color: var(--muted-foreground);
+      }
+      .current .v {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 2px;
+        font-size: 13px;
+        font-weight: 600;
+        word-break: break-word;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        flex: none;
+        border-radius: 50%;
+        background: var(--muted-foreground);
+      }
+      .dot.on {
+        background: var(--primary);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
+      }
+      .list {
+        display: grid;
+        gap: 2px;
+      }
+      .row {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 8px 9px;
+        border-radius: calc(var(--radius, 10px) - 2px);
+      }
+      .row.active {
+        background: var(--accent);
+        color: var(--accent-foreground);
+      }
+      .row.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 7px;
+        bottom: 7px;
+        width: 2px;
+        border-radius: 2px;
+        background: var(--primary);
+      }
+      .slot {
+        width: 18px;
+        height: 18px;
+        flex: none;
+        display: grid;
+        place-items: center;
+        margin-top: 1px;
+        border-radius: 5px;
+        border: 1px solid var(--border);
+        color: var(--muted-foreground);
+        font: 600 10px ui-monospace, Menlo, monospace;
+      }
+      .row.active .slot {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .info {
+        min-width: 0;
+        flex: 1;
+      }
+      .label {
+        font-weight: 500;
+        word-break: break-word;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 3px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        height: 17px;
+        padding: 0 6px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--muted-foreground);
+        font-size: 10.5px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .badge.inuse {
+        border-color: transparent;
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .badge.warn,
+      .badge.bad {
+        color: var(--destructive);
+        border-color: color-mix(in srgb, var(--destructive) 45%, transparent);
+      }
+      .badge.bad {
+        background: color-mix(in srgb, var(--destructive) 12%, transparent);
+      }
+      .usage {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .mini-head {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10.5px;
+        color: var(--muted-foreground);
+      }
+      .mini-pct {
+        font-weight: 600;
+        color: var(--foreground);
+        font-variant-numeric: tabular-nums;
+      }
+      .mini-pct.high,
+      .mini-pct.full {
+        color: var(--destructive);
+      }
+      .mini-track {
+        height: 4px;
+        margin-top: 2px;
+        border-radius: 999px;
+        background: var(--muted);
+        overflow: hidden;
+      }
+      .mini-fill {
+        height: 100%;
+        background: var(--primary);
+      }
+      .mini-fill.high {
+        background: color-mix(in srgb, var(--destructive) 60%, var(--primary));
+      }
+      .mini-fill.full {
+        background: var(--destructive);
+      }
+      .empty,
+      .note {
+        padding: 10px 2px;
+        color: var(--muted-foreground);
+      }
+      .alert {
+        margin-bottom: 12px;
+        padding: 8px 10px;
+        border-radius: calc(var(--radius, 10px) - 2px);
+        border: 1px solid color-mix(in srgb, var(--destructive) 45%, transparent);
+        color: var(--destructive);
+      }
+      .cta {
+        display: grid;
+        gap: 7px;
+        margin-bottom: 12px;
+        padding: 10px 11px;
+        border-radius: var(--radius, 10px);
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .cta-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .cta-row span {
+        opacity: 0.8;
+      }
+      .cta kbd {
+        border-color: color-mix(in srgb, var(--primary-foreground) 30%, transparent);
+        background: color-mix(in srgb, var(--primary-foreground) 12%, transparent);
+        color: var(--primary-foreground);
+      }
+      .keys {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        display: grid;
+        gap: 6px;
+        color: var(--muted-foreground);
+      }
+      .keys div {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      kbd {
+        flex: none;
+        padding: 0 5px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background: var(--muted);
+        color: var(--foreground);
+        font: 500 10.5px ui-monospace, Menlo, monospace;
+        line-height: 17px;
+      }
+      .stamp {
+        margin-top: 12px;
+        font-size: 10.5px;
+        color: var(--muted-foreground);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Claude Accounts</h1>
+    <div class="alert" id="drift" hidden>~/.claude/settings.json holds a different token than the account in use.</div>
+    <div class="current">
+      <div class="k">In use</div>
+      <div class="v"><span class="dot" id="dot"></span><span id="current">Default login (no token)</span></div>
+    </div>
+    <!-- Panels can't run plugin commands, so the way in is a shortcut, shown first. -->
+    <div class="cta">
+      <div class="cta-row"><strong>Add, edit or switch</strong><kbd>⌘⇧M</kbd></div>
+      <div class="cta-row"><span>Switch to next account</span><kbd>⌘⇧J</kbd></div>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="keys">
+      <div><span>All commands: ⌘J → “Claude Account”</span></div>
+    </div>
+    <div class="stamp" id="stamp"></div>
+
+    <script type="application/json" id="data">/*__PANEL_DATA__*/</script>
+    <script>
+      'use strict'
+      var data = null
+      try {
+        data = JSON.parse(document.getElementById('data').textContent)
+      } catch (_) {}
+
+      var LIFETIME_DAYS = 365
+      var WARN_DAYS = 14
+      var DAY_MS = 86400000
+
+      function el(tag, className, text) {
+        var node = document.createElement(tag)
+        if (className) node.className = className
+        if (text !== undefined) node.textContent = text
+        return node
+      }
+
+      // Computed here, not baked in, so the countdown stays right between rewrites.
+      function expiry(account) {
+        var left = Math.floor((Date.parse(account.tokenUpdatedAt) + LIFETIME_DAYS * DAY_MS - Date.now()) / DAY_MS)
+        if (left < 0) return { text: 'expired ' + -left + 'd ago', cls: ' bad' }
+        if (left <= WARN_DAYS) return { text: 'expires in ' + left + 'd', cls: ' warn' }
+        return { text: left + 'd left', cls: '' }
+      }
+
+      function mini(name, win) {
+        var box = el('div', 'mini')
+        var level = !win ? '' : win.percent >= 100 || win.status === 'rejected' ? ' full' : win.percent >= 80 ? ' high' : ''
+        var head = el('div', 'mini-head')
+        head.appendChild(el('span', '', name))
+        head.appendChild(el('span', 'mini-pct' + level, win ? win.percent + '%' : '—'))
+        box.appendChild(head)
+        var track = el('div', 'mini-track')
+        var fill = el('div', 'mini-fill' + level)
+        fill.style.width = (win ? Math.min(win.percent, 100) : 0) + '%'
+        track.appendChild(fill)
+        box.appendChild(track)
+        return box
+      }
+
+      function usageRow(usage) {
+        var wrap = el('div', 'usage')
+        wrap.appendChild(mini('5h', usage.fiveHour))
+        wrap.appendChild(mini('7d', usage.sevenDay))
+        wrap.title = 'Usage read ' + new Date(usage.at).toLocaleString() + ' (refresh from Manage accounts)'
+        return wrap
+      }
+
+      function render() {
+        var list = document.getElementById('list')
+        list.textContent = ''
+        if (!data) {
+          list.appendChild(el('div', 'note', 'No data yet. Open Manage Accounts (⌘⇧M) once.'))
+          return
+        }
+        if (data.font) document.documentElement.style.setProperty('--panel-font', data.font)
+        var active = data.accounts.filter(function (a) {
+          return a.active
+        })[0]
+        document.getElementById('current').textContent = active ? active.label : 'Default login (no token)'
+        document.getElementById('dot').className = 'dot' + (active ? ' on' : '')
+        document.getElementById('drift').hidden = !data.drift
+        document.getElementById('stamp').textContent =
+          Date.parse(data.generatedAt) > 0 ? 'Updated ' + new Date(data.generatedAt).toLocaleString() : ''
+
+        if (!data.accounts.length) {
+          list.appendChild(el('div', 'empty', 'No accounts yet. Press ⌘⇧M to add one.'))
+          return
+        }
+        data.accounts.forEach(function (account) {
+          var row = el('div', 'row' + (account.active ? ' active' : ''))
+          row.appendChild(el('div', 'slot', String(account.slot)))
+          var info = el('div', 'info')
+          info.appendChild(el('div', 'label', account.label))
+          var meta = el('div', 'meta')
+          if (account.active) meta.appendChild(el('span', 'badge inuse', 'In use'))
+          var e = expiry(account)
+          meta.appendChild(el('span', 'badge' + e.cls, e.text))
+          info.appendChild(meta)
+          if (account.usage) info.appendChild(usageRow(account.usage))
+          row.appendChild(info)
+          list.appendChild(row)
+        })
+      }
+
+      render()
+      setInterval(render, 60 * 60 * 1000)
+    </script>
+  </body>
+</html>

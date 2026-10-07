@@ -1,0 +1,92 @@
+{
+  "manifestVersion": 1,
+  "id": "claude-accounts",
+  "publisher": "baroned",
+  "name": "Claude Accounts",
+  "version": "0.10.0",
+  "description": "Add, label, update, remove and switch Claude Code accounts (one-year `claude setup-token` tokens kept in the macOS Keychain).",
+  "author": {
+    "name": "Nguyễn Duy Khương",
+    "url": "https://github.com/baroned1707"
+  },
+  "repository": "https://github.com/baroned1707/orca-claude-accounts",
+  "engines": {
+    "orca": ">=1.4.0"
+  },
+  "pluginApi": 1,
+  "main": "main.mjs",
+  "contributes": {
+    "panels": [
+      {
+        "id": "accounts",
+        "title": "Claude Accounts",
+        "icon": "bot",
+        "entry": "panel.html"
+      }
+    ],
+    "commands": [
+      {
+        "id": "manage",
+        "title": "Claude Account: Manage Accounts…",
+        "context": "global"
+      },
+      {
+        "id": "next",
+        "title": "Claude Account: Switch to Next",
+        "context": "global"
+      },
+      {
+        "id": "show",
+        "title": "Claude Account: Show Accounts",
+        "context": "global"
+      },
+      {
+        "id": "slot-1",
+        "title": "Claude Account: Use Slot 1",
+        "context": "global"
+      },
+      {
+        "id": "slot-2",
+        "title": "Claude Account: Use Slot 2",
+        "context": "global"
+      },
+      {
+        "id": "slot-3",
+        "title": "Claude Account: Use Slot 3",
+        "context": "global"
+      },
+      {
+        "id": "slot-4",
+        "title": "Claude Account: Use Slot 4",
+        "context": "global"
+      },
+      {
+        "id": "slot-5",
+        "title": "Claude Account: Use Slot 5",
+        "context": "global"
+      },
+      {
+        "id": "off",
+        "title": "Claude Account: Use Default Login (no token)",
+        "context": "global"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "manage",
+        "key": "Mod+Shift+M",
+        "when": "global"
+      },
+      {
+        "command": "next",
+        "key": "Mod+Shift+J",
+        "when": "global"
+      }
+    ]
+  },
+  "capabilities": [
+    {
+      "kind": "notifications:show"
+    }
+  ]
+}
