@@ -584,9 +584,10 @@
         el.textContent = text
         el.className = 'show' + (isError ? ' err' : '')
         clearTimeout(toastTimer)
+        // Long messages (e.g. an "Added … Note: …" warning) stay up longer.
         toastTimer = setTimeout(function () {
           el.className = ''
-        }, 3200)
+        }, text.length > 90 ? 9000 : 3200)
       }
 
       function icon(path) {
@@ -751,7 +752,9 @@
           label.title = account.label
           info.appendChild(label)
           if (account.email || account.orgId) {
-            var who = el('div', 'who', account.email || 'Org ' + account.orgId.slice(0, 8) + '… · email unknown')
+            var whoText = account.email || 'Org ' + account.orgId.slice(0, 8) + '… · email unknown'
+            if (account.lastCheck && account.lastCheck.sameOrgAs) whoText += ' · same organization as ' + account.lastCheck.sameOrgAs
+            var who = el('div', 'who', whoText)
             who.title = account.email
               ? 'Claude account of this token (organization ' + account.orgId + ')'
               : 'This token belongs to organization ' + account.orgId + '. Its email is only known for accounts signed in on this Mac with /login.'

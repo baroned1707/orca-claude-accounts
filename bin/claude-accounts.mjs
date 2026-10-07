@@ -8,6 +8,7 @@ import { ensureManagerServer } from '../lib/server-process.mjs'
 import {
   accountRow,
   addAccount,
+  sameOrgNote,
   checkAccounts,
   refreshUsage,
   removeAccount,
@@ -92,6 +93,8 @@ async function main([command, arg, ...rest]) {
     case 'add': {
       const label = need([arg, ...rest].join(' ').trim(), 'claude-accounts add <label>')
       const account = await addAccount(label, await readToken())
+      const note = sameOrgNote(account)
+      if (note) console.log(`Note: ${note}.`)
       console.log(`Added "${account.label}" (token stored in the ${BACKEND_LABELS[account.secretBackend] ?? account.secretBackend}). Switch with: claude-accounts use ${(await status()).accounts.length}`)
       return
     }
