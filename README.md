@@ -32,21 +32,21 @@ from `claude setup-token` ([docs](https://code.claude.com/docs/en/authentication
 ### Recommended: developer path (live sidebar panel)
 
 ```sh
-git clone --branch v0.11.0 https://github.com/baroned1707/orca-claude-accounts.git
+git clone --branch v0.11.1 https://github.com/baroned1707/orca-claude-accounts.git
 cd orca-claude-accounts
 npm link        # optional: adds the `claude-accounts` CLI to your PATH
 ```
 
 In Orca: **Settings → Plugins → Developer plugin paths** → add the cloned folder,
 enable **Claude Accounts** and accept its capability (notifications).
-`--branch v0.11.0` pins the release; `git fetch --tags && git checkout v<next>` upgrades.
+`--branch v0.11.1` pins the release; `git fetch --tags && git checkout v<next>` upgrades.
 
 ### Install from Git (pinned)
 
 In Orca's plugin installer choose **Git** and enter the URL with an explicit ref:
 
 ```
-https://github.com/baroned1707/orca-claude-accounts.git#v0.11.0
+https://github.com/baroned1707/orca-claude-accounts.git#v0.11.1
 ```
 
 Orca requires the `#ref` (a tag or a commit SHA) and installs exactly that
@@ -109,8 +109,11 @@ Other files:
 | `accounts.json` in the data folder¹ | labels, dates, last check, usage — no tokens |
 | `server.json` in the data folder¹ | URL of the running manager page (mode 600) |
 
-¹ `~/.config/orca-claude-accounts` on macOS/Linux (`$XDG_CONFIG_HOME` respected),
-`%APPDATA%\orca-claude-accounts` on Windows.
+¹ `~/.config/orca-claude-accounts` on macOS/Linux and
+`%USERPROFILE%\AppData\Roaming\orca-claude-accounts` on Windows. These are fixed on
+purpose: Orca starts plugin workers without `XDG_CONFIG_HOME`/`APPDATA`, so the
+plugin, the CLI and the manager page must agree without them. Data that v0.11.0
+wrote under `$XDG_CONFIG_HOME` is moved back automatically.
 
 ## Manage accounts page
 

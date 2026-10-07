@@ -850,7 +850,7 @@
             : mode === 'token'
               ? 'Paste a new claude setup-token token for "' + account.label + '".'
               : mode === 'remove'
-                ? 'Remove "' + account.label + '" and delete its token from the Keychain?' +
+                ? 'Remove "' + account.label + '" and delete its stored token?' +
                   (account.active ? ' It is in use: Claude Code will fall back to /login.' : '')
                 : spec.desc
         $('f-label').hidden = spec.fields.indexOf('label') < 0

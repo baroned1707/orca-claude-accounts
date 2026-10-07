@@ -3,7 +3,7 @@
   "id": "claude-accounts",
   "publisher": "baroned",
   "name": "Claude Accounts",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Add, label, update, remove and switch Claude Code accounts (one-year `claude setup-token` tokens kept in your system secret store), with token checks and per-account usage.",
   "author": {
     "name": "Nguyễn Duy Khương",

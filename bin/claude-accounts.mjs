@@ -30,7 +30,7 @@ const USAGE = `claude-accounts — switch Claude Code between setup-token accoun
   claude-accounts check [slot|label] check tokens with Anthropic (all when omitted; uses no quota)
   claude-accounts token <slot|label> replace an account's token
   claude-accounts label <slot|label> <new label>
-  claude-accounts rm <slot|label>    delete an account and its Keychain token
+  claude-accounts rm <slot|label>    delete an account and its stored token
   claude-accounts off                remove the token; Claude Code falls back to /login
 
 Token input: hidden prompt, or pipe it: pbpaste | claude-accounts add "Work"`
