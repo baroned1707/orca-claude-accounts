@@ -638,8 +638,10 @@
         if (!iso) return ''
         var ms = Date.parse(iso) - Date.now()
         if (ms <= 0) return 'resets now'
-        var h = Math.floor(ms / 3600000)
-        var m = Math.round((ms % 3600000) / 60000)
+        // Round to whole minutes first so 47h 59.6m reads 48h 0m, never 47h 60m.
+        var total = Math.round(ms / 60000)
+        var h = Math.floor(total / 60)
+        var m = total % 60
         if (h >= 48) return 'resets ' + new Date(iso).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })
         return 'resets in ' + (h ? h + 'h ' : '') + m + 'm'
       }

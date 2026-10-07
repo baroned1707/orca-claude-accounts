@@ -1,164 +1,188 @@
 # Claude Accounts — Orca plugin
 
 Switch [Claude Code](https://code.claude.com) between several Claude accounts from
-inside [Orca](https://github.com/stablyai/orca). Each account uses a one-year token
-from `claude setup-token` ([docs](https://code.claude.com/docs/en/authentication)).
+inside [Orca](https://github.com/stablyai/orca) — work, personal, team seats — without
+logging in and out. Each account uses a one-year token from `claude setup-token`.
 
-- **Add, label, update, remove and switch** accounts; the account in use is highlighted.
-- **Token check** with Anthropic before saving (uses no quota).
+![Manage accounts page](docs/images/manage-dark.png)
+
+- **Switch in one keystroke**; running Claude Code sessions follow the switch.
 - **Usage per account**: 5-hour and 7-day usage with reset times, shown by default.
-- **Sidebar panel**, **command palette** commands and **shortcuts** in Orca, plus a CLI.
-- Tokens live in your system's **secret store** (macOS Keychain, Windows DPAPI,
-  Linux keyring), never in the plugin folder.
+- **Token check** with Anthropic before saving (uses no quota).
+- **Secure storage**: macOS Keychain, Windows DPAPI, Linux keyring.
+- Looks like Orca: the page uses the design tokens of your installed Orca and follows your theme.
 
 > Experimental: built on Orca's plugin API v1 (Orca 1.4.x), which is itself experimental.
+> macOS is tested daily; Linux storage is tested; Windows is untested — reports welcome.
 
-| Platform | Status |
-| --- | --- |
-| macOS | tested daily |
-| Linux | storage and CLI tested (Debian, with and without a keyring); Orca integration untested |
-| Windows | **untested** — code paths exist, reports welcome |
+---
 
-## Requirements
+## Contents
 
-- [Orca](https://github.com/stablyai/orca) 1.4 or newer on macOS, Windows or Linux
-- Linux: `secret-tool` (package `libsecret-tools` / `libsecret`) and a running
-  keyring (GNOME Keyring, KWallet) — otherwise tokens fall back to a mode-600 file
-- Claude Code, and a Claude subscription per account
-- Node.js 18+ only if you want the `claude-accounts` CLI
+1. [Before you start](#1-before-you-start)
+2. [Get a one-year token for each account](#2-get-a-one-year-token-for-each-account)
+3. [Install the plugin in Orca](#3-install-the-plugin-in-orca)
+4. [Open Claude Accounts](#4-open-claude-accounts)
+5. [Add your accounts](#5-add-your-accounts)
+6. [Switch accounts and watch usage](#6-switch-accounts-and-watch-usage)
+7. [The sidebar panel](#7-the-sidebar-panel)
+8. [Command line](#8-command-line-optional)
+9. [Troubleshooting](#troubleshooting)
+10. [How it works](#how-it-works) · [Where tokens are stored](#where-tokens-are-stored) · [Notes](#notes)
 
-## Install
+---
 
-### Recommended: developer path (live sidebar panel)
+## 1. Before you start
+
+You need:
+
+- [Orca](https://github.com/stablyai/orca) **1.4 or newer** (macOS, Windows or Linux)
+- **Claude Code** installed (`claude` on your PATH)
+- A **Claude subscription** (Pro, Max, Team or Enterprise) for each account you want to add
+- Linux only: `secret-tool` (package `libsecret-tools` or `libsecret`) and a running
+  keyring such as GNOME Keyring or KWallet. Without one, tokens fall back to a
+  mode-600 file and the page warns you.
+
+## 2. Get a one-year token for each account
+
+`claude setup-token` creates a long-lived (one-year) token for the Claude account
+that is **signed in on claude.ai in your browser**
+([Claude Code docs](https://code.claude.com/docs/en/authentication)).
+
+For **each** account:
+
+1. In your browser, sign in to [claude.ai](https://claude.ai) **with that account**.
+   Tip: use a private/incognito window, or sign out first, so you don't authorize
+   the wrong account.
+2. In a terminal, run:
+
+   ```sh
+   claude setup-token
+   ```
+
+3. Approve the request in the browser page that opens.
+4. Back in the terminal, copy the printed token. It starts with `sk-ant-oat01-`.
+
+Keep the token private — it gives access to that account's Claude usage. You will
+paste it into the plugin in step 5; the plugin stores it securely and never shows it again.
+
+## 3. Install the plugin in Orca
+
+Choose **one** of the two options.
+
+### Option A — install from Git (simplest)
+
+1. In Orca, open **Settings → Plugins**.
+2. Choose to install a plugin from **Git** and enter this URL **including the `#` part**:
+
+   ```
+   https://github.com/baroned1707/orca-claude-accounts.git#v0.11.3
+   ```
+
+   The `#v0.11.3` pins the exact release; Orca requires a tag or commit after `#`.
+3. Enable **Claude Accounts** and approve its permission (it only shows notifications).
+
+### Option B — developer path (live sidebar panel, easy updates)
 
 ```sh
-git clone --branch v0.11.2 https://github.com/baroned1707/orca-claude-accounts.git
+git clone --branch v0.11.3 https://github.com/baroned1707/orca-claude-accounts.git
 cd orca-claude-accounts
-npm link        # optional: adds the `claude-accounts` CLI to your PATH
+npm link        # optional: adds the `claude-accounts` command (Node.js 18+)
 ```
 
-In Orca: **Settings → Plugins → Developer plugin paths** → add the cloned folder,
-enable **Claude Accounts** and accept its capability (notifications).
-`--branch v0.11.2` pins the release; `git fetch --tags && git checkout v<next>` upgrades.
+Then in Orca: **Settings → Plugins → Developer plugin paths** → add the cloned
+folder, enable **Claude Accounts** and approve its permission.
 
-### Install from Git (pinned)
+Option B is needed for a sidebar panel that updates live (see [step 7](#7-the-sidebar-panel)).
+To upgrade later: `git fetch --tags && git checkout v<new version>`.
 
-In Orca's plugin installer choose **Git** and enter the URL with an explicit ref:
+> Orca asks you to approve the plugin again whenever its keyboard shortcuts change
+> (for example after an upgrade). Until you do, commands report
+> *"Could not run the plugin command"*.
 
-```
-https://github.com/baroned1707/orca-claude-accounts.git#v0.11.2
-```
+## 4. Open Claude Accounts
 
-Orca requires the `#ref` (a tag or a commit SHA) and installs exactly that
-version. Everything works the same except the sidebar panel: an installed copy is
-content-hashed and never rewritten, so the panel can't show live data (see
-[Sidebar panel](#sidebar-panel)). Use the developer path if you want it.
+Any of these opens the **Manage accounts** page as a tab inside Orca:
 
-## Use it
-
-| Where | How |
-| --- | --- |
-| Shortcut | `⌘⇧M` opens **Manage accounts**, `⌘⇧J` switches to the next account |
-| Sidebar | `⌘L` opens the right sidebar → **bot** icon → **Claude Accounts** |
-| Command palette | `⌘J` → type `Claude Account` |
-
-On Windows and Linux, read `⌘` as `Ctrl` (`Ctrl+Shift+M`, `Ctrl+Shift+J`, …).
-`⌘⇧M` is also Orca's default for *New markdown tab*. If it opens a markdown tab,
-change one of the two in **Settings → Shortcuts**.
-
-### Add an account
-
-1. Sign in to claude.ai with the account in your browser.
-2. Run `claude setup-token` and copy the `sk-ant-oat01-…` token.
-3. `⌘⇧M` → **Add account** → give it a label (e.g. "Work – me@company.com") and paste the token.
-
-The token is checked with Anthropic first: a rejected token is never saved, and
-pasting a token that is already stored is refused. A token from the same
-organization as an existing account is saved with a note — normal for
-Team/Enterprise plans, whose members share one organization.
-
-## How switching works
-
-Switching writes the account's token to `env.CLAUDE_CODE_OAUTH_TOKEN` in
-`~/.claude/settings.json`. Claude Code reads that file at start-up **and reloads it
-while running**, so:
-
-- new `claude` sessions use the selected account, from Orca or any terminal;
-- **running sessions switch too** — their next request goes to the new account
-  (verified with Claude Code 2.1.292);
-- all sessions share one account at a time (they share `~/.claude/settings.json`).
-
-**Use default login** removes the token, and Claude Code goes back to your `/login` session.
-
-## Where tokens are stored
-
-| Platform | Every account's token | How |
+| How | macOS | Windows / Linux |
 | --- | --- | --- |
-| macOS | login Keychain, service `orca-claude-accounts` | `security`, token on stdin |
-| Windows | `%APPDATA%\orca-claude-accounts\tokens\<id>.dpapi` | encrypted with DPAPI for your Windows user (PowerShell `ConvertFrom-SecureString`), token on stdin |
-| Linux | Secret Service keyring (GNOME Keyring, KWallet…) | `secret-tool`, token on stdin |
-| Linux, no keyring | `~/.config/orca-claude-accounts/tokens/<id>` | plain file, mode 600 — flagged in the UI |
+| Keyboard shortcut | `⌘⇧M` | `Ctrl+Shift+M` |
+| Command palette | `⌘J` → type **Claude Account: Manage Accounts…** | `Ctrl+Shift+J` → same |
 
-Each account records which store holds its token. Tokens never appear in process
-arguments, the plugin folder, the sidebar panel or the manager page's responses.
+Orca needs an open worktree to show the tab; otherwise the page opens in your
+default browser. `⌘⇧M` is also Orca's default for *New markdown tab* — if that is
+what opens, change one of the two in **Settings → Shortcuts**.
 
-Other files:
+## 5. Add your accounts
 
-| Location | Contents |
-| --- | --- |
-| `~/.claude/settings.json` → `env.CLAUDE_CODE_OAUTH_TOKEN` | the token of the account **in use**, as plain text (that is where Claude Code reads it); file mode 600 on macOS/Linux |
-| `accounts.json` in the data folder¹ | labels, dates, last check, usage — no tokens |
-| `server.json` in the data folder¹ | URL of the running manager page (mode 600) |
+Click **Add account**, give it a label you will recognise (for example
+"Work – alex@company.com"), paste the token from step 2, and keep
+**Switch to it now** ticked if you want to use it right away.
 
-¹ `~/.config/orca-claude-accounts` on macOS/Linux and
-`%USERPROFILE%\AppData\Roaming\orca-claude-accounts` on Windows. These are fixed on
-purpose: Orca starts plugin workers without `XDG_CONFIG_HOME`/`APPDATA`, so the
-plugin, the CLI and the manager page must agree without them. Data that v0.11.0
-wrote under `$XDG_CONFIG_HOME` is moved back automatically.
+![Add account dialog](docs/images/add-account.png)
 
-## Manage accounts page
+Before saving, the plugin checks the token with Anthropic (no quota used):
 
-`⌘⇧M` opens the manager as a tab in Orca's built-in browser. Per account:
-**Switch**, **Refresh usage**, **Check token**, **Edit label**, **Update token**, **Remove**.
+- a **rejected** token is not saved, and the dialog shows why;
+- a token that is **already saved** is refused;
+- a token from the **same organization** as an existing account is saved with a
+  note — normal on Team/Enterprise plans, whose members share one organization.
 
-- **Usage** shows by default: the page reads it when opened and every 5 minutes
-  while visible (only when the last reading is older than 5 minutes).
-  setup-token tokens can't call Anthropic's usage API (it needs the
-  `user:profile` scope), so each reading sends the smallest model request (Haiku,
-  1 output token) and reads the `anthropic-ratelimit-unified-*` headers — the same
-  numbers Claude Code uses. Each reading spends a tiny amount of the account's usage.
-- **Token check** lists models (`GET /v1/models`): it needs a working token but runs
-  no model, so it uses no quota.
-- **Email**: setup-token tokens can't read the profile either. The plugin records
-  each token's organization id and shows the email when that organization matches
-  an account signed in on this Mac with `/login` (Claude Code or Orca); otherwise
-  it shows the organization id.
-- **Theme**: the page has no colors of its own. It reads the design tokens from the
-  installed Orca (its `resources/app.asar`) and follows your Orca theme and font;
-  without a readable Orca install it falls back to system colors.
+Repeat for every account.
 
-Orca panels can't exchange data with a plugin's worker (panel CSP is
-`connect-src 'none'`), so the page is served by a small local server running as its
-own process (`bin/manager-server.mjs`): it binds to `127.0.0.1` under a random
-256-bit URL secret, checks the `Host` header, accepts only JSON writes with a custom
-header, never returns tokens, and exits after 30 minutes without requests.
+## 6. Switch accounts and watch usage
 
-## Sidebar panel
+![Manage accounts page, light theme](docs/images/manage-light.png)
 
-Shows the account in use, every account with expiry and last usage, and the
-shortcuts. It is read-only: Orca gives panels no way to receive data or run plugin
-commands, so `panel.html` is regenerated from `ui/panel.template.html` whenever
-the accounts change, and Orca reloads it. It contains labels, dates and usage —
-never tokens or emails.
+- **In use** — the account Claude Code uses now: shown at the top, marked with an
+  accent bar, a filled slot number and an *In use* badge.
+- **Switch** — makes that account the one in use. New *and already running* Claude
+  Code sessions use it from their next request; no restart needed.
+- **Usage** — 5-hour and 7-day bars with the time until they reset. Amber means
+  80 % or more, red means the limit is reached (*Limit reached*). Usage is read when
+  the page opens and every 5 minutes while it is visible.
+- **Badges** — *✓ Valid* / *✕ Invalid* from the last token check, days left on the
+  one-year token (amber from 14 days), and the account's email when it is known.
+- **Row buttons** — refresh usage, check token, edit label, update token, remove.
+- **Header buttons** — *Refresh usage* and *Check all* for every account at once.
+- **Use default login** — removes the token; Claude Code goes back to your normal `/login` session.
 
-## CLI
+Faster switching without opening the page:
+
+| Action | macOS | Windows / Linux |
+| --- | --- | --- |
+| Switch to the next account | `⌘⌥N` | `Ctrl+Alt+N` |
+| Use account 1…5 | `⌘J` → **Claude Account: Use Slot N** | `Ctrl+Shift+J` → same |
+| List accounts in a notification | `⌘J` → **Claude Account: Show Accounts** | `Ctrl+Shift+J` → same |
+
+When a token is about to expire, create a new one (step 2) and use **Update token**
+on that account.
+
+## 7. The sidebar panel
+
+Open Orca's right sidebar (`⌘L` / `Ctrl+L`) and click the **bot** icon:
+
+<img src="docs/images/sidebar-panel.png" alt="Sidebar panel" width="320">
+
+It shows the account in use, every account with its token age and last usage, and
+the shortcuts. The panel is **read-only** — Orca doesn't let plugin panels run
+commands — so use `⌘⇧M` to change anything.
+
+It updates live only with the **developer path** install (Option B): the plugin
+refreshes it by rewriting `panel.html` in its folder, which Orca can't do for a
+Git-installed (content-locked) copy. It never contains tokens or emails.
+
+## 8. Command line (optional)
+
+After `npm link` (Option B):
 
 ```sh
-claude-accounts                        # list (● = in use) with last usage
-claude-accounts ui                     # open the manager page
+claude-accounts                        # list accounts (● = in use) with last usage
+claude-accounts ui                     # open the Manage accounts page
 claude-accounts add "Work – me@co.com" # paste the token at the hidden prompt (or: pbpaste | …)
-claude-accounts use 2                  # switch by slot or label
-claude-accounts next | off
+claude-accounts use 2                  # switch by slot number or label
+claude-accounts next                   # switch to the next account
+claude-accounts off                    # use your normal /login session
 claude-accounts usage [slot]           # 5-hour / 7-day usage
 claude-accounts check [slot]           # validate tokens (no quota)
 claude-accounts token 2                # replace a token
@@ -166,18 +190,78 @@ claude-accounts label 2 "New label"
 claude-accounts rm 2
 ```
 
+---
+
+## Troubleshooting
+
+| Problem | What to do |
+| --- | --- |
+| *Could not run the plugin command* | **Settings → Plugins → Claude Accounts**: approve the plugin again (needed after shortcut changes), then reload it. |
+| `⌘⇧M` opens a markdown tab | Orca's *New markdown tab* uses the same key. Change one of them in **Settings → Shortcuts**. |
+| The page opened in my web browser | Orca needs an open worktree to show it as a tab. |
+| *The account manager is not running* | It stops after 30 idle minutes. Press `⌘⇧M` again. |
+| *token rejected by Anthropic* | The token is wrong, revoked or expired. Create a new one (step 2). |
+| *this token is already saved as …* | You pasted a token that is already stored — check your clipboard holds the new token. |
+| *same organization as …* | Fine on Team/Enterprise plans. Otherwise you probably ran `claude setup-token` while the browser was signed in to that other account. |
+| *⚠ Stored in a plain file* (Linux) | No keyring was available. Start/unlock GNOME Keyring or KWallet, then **Update token** to move it into the keyring. |
+| No email shown | setup-token tokens can't read the profile. The email appears only for accounts also signed in on this computer with `/login`; use a descriptive label instead. |
+
+---
+
+## How it works
+
+Switching writes the selected token to `env.CLAUDE_CODE_OAUTH_TOKEN` in
+`~/.claude/settings.json`. Claude Code reads that file at start-up **and reloads
+it while running**, so new and running sessions use the selected account
+(verified with Claude Code 2.1.292). All sessions share one account at a time.
+
+- **Token check** — `GET /v1/models` with the token: needs a working token, runs no
+  model, uses no quota.
+- **Usage** — setup-token tokens can't call Anthropic's usage API (it needs the
+  `user:profile` scope), so each reading sends the smallest model request (Haiku,
+  1 output token) and reads the `anthropic-ratelimit-unified-*` headers, the same
+  numbers Claude Code uses. Each reading spends a tiny amount of usage.
+- **Email** — the plugin records each token's organization id and shows the email
+  when it matches an account signed in on this computer with `/login`.
+- **Manage page** — plugin panels can't exchange data with the plugin, so the page
+  is served by a small local server running as its own process: bound to
+  `127.0.0.1`, behind a random 256-bit URL secret, `Host`-checked, JSON-only writes
+  with a custom header, never returns tokens, exits after 30 idle minutes.
+- **Theme** — read at runtime from the installed Orca's `resources/app.asar`, so it
+  matches your Orca version, theme and font; system colors if Orca can't be read.
+
+## Where tokens are stored
+
+| Platform | Every account's token | How |
+| --- | --- | --- |
+| macOS | login Keychain, service `orca-claude-accounts` | `security`, token passed on stdin |
+| Windows | `%USERPROFILE%\AppData\Roaming\orca-claude-accounts\tokens\<id>.dpapi` | encrypted with DPAPI for your Windows user |
+| Linux | Secret Service keyring (GNOME Keyring, KWallet…) | `secret-tool`, token passed on stdin |
+| Linux, no keyring | `~/.config/orca-claude-accounts/tokens/<id>` | plain file, mode 600, flagged in the UI |
+
+Tokens never appear in process arguments, the plugin folder, the sidebar panel or
+the page's responses.
+
+| Other file | Contents |
+| --- | --- |
+| `~/.claude/settings.json` → `env.CLAUDE_CODE_OAUTH_TOKEN` | the token of the account **in use**, in plain text — that is where Claude Code reads it |
+| `accounts.json` in the data folder¹ | labels, dates, last check, usage — no tokens |
+| `server.json` in the data folder¹ | URL of the running Manage page (mode 600) |
+
+¹ `~/.config/orca-claude-accounts` on macOS/Linux and
+`%USERPROFILE%\AppData\Roaming\orca-claude-accounts` on Windows — fixed paths,
+because Orca starts plugins without `XDG_CONFIG_HOME`/`APPDATA`.
+
 ## Notes
 
-- Setup tokens are inference-only: features that need a full login (e.g. Remote
-  Control) don't work while a token is active.
+- setup-token tokens are inference-only: features that need a full login (for
+  example Remote Control) don't work while a token is in use.
 - Don't also pick a managed Claude account in Orca's own account switcher: Orca then
-  points Claude Code at a different config dir and this token is ignored.
+  points Claude Code at a different config folder and ignores this token.
 - Remove any `CLAUDE_CODE_OAUTH_TOKEN` exported in your shell profile.
-- Orca asks you to approve the plugin again whenever its shortcuts change.
-- Desktop notifications from the manager page use `osascript` (macOS) and
-  `notify-send` (Linux); Windows shows the page's own message instead.
-- A notification warns when a token is within 14 days of its one-year expiry
-  (counted from when it was added or last updated).
+- Desktop notifications from the Manage page use `osascript` (macOS) and
+  `notify-send` (Linux); on Windows the page shows its own messages.
+- Screenshots use made-up demo accounts.
 
 ## License
 
