@@ -32,21 +32,21 @@ from `claude setup-token` ([docs](https://code.claude.com/docs/en/authentication
 ### Recommended: developer path (live sidebar panel)
 
 ```sh
-git clone --branch v0.11.1 https://github.com/baroned1707/orca-claude-accounts.git
+git clone --branch v0.11.2 https://github.com/baroned1707/orca-claude-accounts.git
 cd orca-claude-accounts
 npm link        # optional: adds the `claude-accounts` CLI to your PATH
 ```
 
 In Orca: **Settings → Plugins → Developer plugin paths** → add the cloned folder,
 enable **Claude Accounts** and accept its capability (notifications).
-`--branch v0.11.1` pins the release; `git fetch --tags && git checkout v<next>` upgrades.
+`--branch v0.11.2` pins the release; `git fetch --tags && git checkout v<next>` upgrades.
 
 ### Install from Git (pinned)
 
 In Orca's plugin installer choose **Git** and enter the URL with an explicit ref:
 
 ```
-https://github.com/baroned1707/orca-claude-accounts.git#v0.11.1
+https://github.com/baroned1707/orca-claude-accounts.git#v0.11.2
 ```
 
 Orca requires the `#ref` (a tag or a commit SHA) and installs exactly that
@@ -72,9 +72,10 @@ change one of the two in **Settings → Shortcuts**.
 2. Run `claude setup-token` and copy the `sk-ant-oat01-…` token.
 3. `⌘⇧M` → **Add account** → give it a label (e.g. "Work – me@company.com") and paste the token.
 
-The token is checked with Anthropic first: a rejected token is never saved, and a
-second token for an account that is already in the list is refused (use
-**Update token** on that account instead).
+The token is checked with Anthropic first: a rejected token is never saved, and
+pasting a token that is already stored is refused. A token from the same
+organization as an existing account is saved with a note — normal for
+Team/Enterprise plans, whose members share one organization.
 
 ## How switching works
 
