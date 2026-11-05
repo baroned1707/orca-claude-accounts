@@ -180,13 +180,15 @@ The sidebar panel asks the plugin through Orca instead of reading a file, so it 
 to work on any client that shows plugin panels: Orca mobile, the browser client
 (`orca serve`) and a desktop paired to an Orca server. It lists accounts, switches the
 account in use, refreshes usage and checks tokens. Adding an account, changing a token,
-renaming and removing are shown only in the desktop app, so a token is not typed on a
-remote client.
+renaming and removing are shown only in the desktop app. This only hides the controls: it
+is not an access check, and a desktop paired to an Orca server shows them too.
 
 > **Not yet confirmed on real devices.** The panel is tested with a simulated Orca and on
 > the desktop app. Whether Orca mobile, the browser client and a paired desktop show it
-> and let it call the plugin is still being checked; until then use the Manage page below
-> from your phone.
+> and let it call the plugin is still being checked. Until then use the Manage page: it opens
+> in a browser tab via `⌘⇧M` (or *Claude Account: Manage Accounts…*), and in Orca mobile you
+> open that worktree's **Claude Accounts** browser tab (or type the address printed by
+> `claude-accounts ui`).
 
 The full Manage page (`⌘⇧M`) is unchanged. If you open its browser tab on your phone it
 still accepts tokens there.
