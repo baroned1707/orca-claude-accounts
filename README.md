@@ -171,29 +171,34 @@ panel follows changes made from the command palette, the CLI or the Manage page.
 A status bar item shows the account in use and turns yellow when its token is close to
 expiry; pressing it lists your accounts.
 
-**On Orca mobile and tablets** the panel adapts: larger text and touch-sized rows,
-two columns on wide screens and safe-area padding.
+On touch screens the panel uses larger text and touch-sized rows, two columns on wide
+screens and safe-area padding. Whether Orca mobile shows plugin panels at all is not
+confirmed; see [7b](#7b-use-it-from-your-phone-or-another-computer).
 
 ## 7b. Use it from your phone or another computer
 
-The sidebar panel asks the plugin through Orca instead of reading a file, so it is built
-to work on any client that shows plugin panels: Orca mobile, the browser client
-(`orca serve`) and a desktop paired to an Orca server. It lists accounts, switches the
-account in use, refreshes usage and checks tokens. Adding an account, changing a token,
-renaming and removing are shown only in the desktop app. This only hides the controls: it
-is not an access check, and a desktop paired to an Orca server shows them too.
+**Desktop is the only client confirmed to show the sidebar panel.** The panel asks the
+plugin through Orca instead of reading a file, and it is written to work on any client that
+shows plugin panels, but:
 
-> **Not yet confirmed on real devices.** The panel is tested with a simulated Orca and on
-> the desktop app. Whether Orca mobile, the browser client and a paired desktop show it
-> and let it call the plugin is still being checked. Until then use the Manage page: it opens
-> in a browser tab via `⌘⇧M` (or *Claude Account: Manage Accounts…*), and in Orca mobile you
-> open that worktree's **Claude Accounts** browser tab (or type the address printed by
-> `claude-accounts ui`).
+- Orca's mobile documentation does not mention plugins, and a search of Orca's mobile app
+  source found no plugin panel screen. Orca mobile may not show this panel at all.
+- Orca's plugin documentation says the browser client (`orca serve`) shows HTML panels in a
+  sandboxed frame; how a desktop paired to an Orca server shows them is not described.
+  Neither has been tried with this plugin.
 
-The full Manage page (`⌘⇧M`) is unchanged. If you open its browser tab on your phone it
-still accepts tokens there.
+What the panel does when a client does show it: lists accounts, switches the account in use,
+refreshes usage and checks tokens. Adding an account, changing a token, renaming and removing
+are shown only in the desktop app. This only hides the controls: it is not an access check,
+and a desktop paired to an Orca server shows them too.
 
-<img src="docs/images/sidebar-panel-mobile.png" alt="Sidebar panel on a phone" width="300">
+**From a phone, use the Manage page.** It opens in a browser tab via `⌘⇧M` (or *Claude
+Account: Manage Accounts…*). Orca mobile shows your computer's browser tabs, so open that
+worktree's **Claude Accounts** tab on your phone (or type the address printed by
+`claude-accounts ui`), and switch the tab to the mobile view for a phone-sized layout. It
+adds, switches, refreshes usage and accepts tokens from there.
+
+<img src="docs/images/manage-mobile.png" alt="Manage accounts on a phone" width="300">
 
 ## 8. Command line (optional)
 

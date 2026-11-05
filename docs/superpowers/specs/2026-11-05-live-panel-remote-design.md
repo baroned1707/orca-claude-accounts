@@ -47,8 +47,10 @@ whether the chosen account can reach Claude running on SSH/WSL workspaces.
 
 ## Not verified (must be tested before relying on them)
 
-- Whether Orca mobile renders the plugin's HTML panel. The repo says it does (commit 44ade4a);
-  Orca's mobile source shows no plugin-panel handling. Test on a phone.
+- Whether Orca mobile renders the plugin's HTML panel. See "Orca mobile findings" below: the
+  evidence points to no. Commit 44ade4a and its README screenshot are not evidence either way (the
+  screenshot appears to be a mock with sample data, not a capture from the mobile app; this is an
+  inference from its placeholder e-mail addresses and address).
 - Whether `plugin.request` and `orca.panels.post` work from a panel in the browser client, on mobile
   and on a paired desktop.
 - Whether Orca logs `plugin.request` inputs (a token typed on desktop passes through one).
@@ -159,3 +161,24 @@ Still not verified:
 - No README screenshot was taken for the repository: the live panel shows real account names, which
   must not be committed to a public repository.
 
+## Orca mobile findings (2026-11-05)
+
+Read from the `stablyai/orca` repository (main):
+- `docs/site/content/docs/mobile.mdx` (136 lines) never mentions plugins, extensions or panels. Its
+  capability list covers worktrees, files, Chat UI, terminal, Quick Commands, browser view
+  (Web/Mobile), source control, the account switcher, workspace creation and host management, and says
+  the app "is intentionally not a full editor — it's a remote control for the desktop".
+- A GitHub code search of `mobile/src` for "plugin" returned only Reanimated "worklet plugin" comments,
+  a test example, and `transport/rpc-operation-compile-fence.ts`. That last file is a type check over
+  the shared RPC catalog, which includes `plugins.panelAction`, `plugins.readPanelEntry`,
+  `plugins.invokeCommand` and `plugins.list`; it does not show that the mobile UI uses them. GitHub code
+  search can miss files, so "no mobile plugin UI" is a finding, not a proof.
+- Runtime side (`src/main/runtime/rpc/methods/plugins.ts`): `plugins.panelAction` is permission
+  `host-admin` and its comment says headless clients relay bridge calls over RPC. Whether a paired phone
+  holds that permission was not checked.
+
+Consequences:
+- The Manage page (browser tab) is the only phone path confirmed by Orca's own docs (browser view).
+- Sub-project 2 (removing the Manage page) stays on hold until the panel is shown to work on a real
+  phone, or the owner decides phones are out of scope.
+- The README no longer claims Orca mobile support and no longer shows `sidebar-panel-mobile.png`.
