@@ -42,3 +42,20 @@ test('the panel ignores snapshots older than the newest it has seen', () => {
   assert.match(scripts[0], /\bseq\b/)
   assert.equal(scripts[0].match(/snapshot\s*=\s*fresh/g)?.length, 1, 'only the seq check assigns a snapshot')
 })
+
+test('writes wait up to Orca\'s maximum, because they queue behind a long token check', () => {
+  assert.ok(!/timeoutMs:\s*30000/.test(scripts[0]), 'no 30 s default for writes')
+  assert.match(scripts[0], /timeoutMs:\s*WRITE_TIMEOUT_MS/)
+  assert.match(scripts[0], /WRITE_TIMEOUT_MS\s*=\s*120000/)
+  assert.match(scripts[0], /accounts\.list['"],\s*\{\},\s*\{\s*timeoutMs:\s*15000/)
+})
+
+test('the panel does not re-render under a focused text field', () => {
+  assert.match(scripts[0], /focusout/)
+  assert.match(scripts[0], /dirty/)
+})
+
+test('the panel copy makes no claim it cannot keep', () => {
+  assert.ok(!html.includes('me@'), 'no email address in examples (labels are shown on remote clients)')
+  assert.ok(!html.includes('It stays on this computer'))
+})

@@ -333,9 +333,12 @@
         'use strict'
         var api = window.orca
         var ready = !!(api && api.plugin && api.plugin.request)
-        // Token entry and destructive edits are desktop only. Orca leaves orca.shell
-        // out of browser clients and Orca mobile, so asking for it tells them apart.
-        // This hides controls; it is not access control (the worker cannot see who asked).
+        // Token entry and destructive edits are shown on the desktop app only. Orca
+        // leaves orca.shell out of browser clients and Orca mobile, so asking for it
+        // tells them apart. This is UI hiding only, not an access check: the worker
+        // cannot see who asked. It is just as true on a desktop paired to an Orca
+        // server, which shows these controls, and desktop frames with isolated
+        // frames switched off behave like a browser client.
         var canEdit = !!(ready && api.host && api.host.has && api.host.has('shell.openExternal'))
 
         var snapshot = null
@@ -345,6 +348,9 @@
         var drafts = {} // input id -> text typed so far
         var openForm = null // { id, kind } with kind menu | rename | token | remove
         var addOpen = false
+        var dirty = false // a newer snapshot arrived while a text field had focus
+        // Writes queue behind a long token check on the worker, so they get Orca's maximum wait.
+        var WRITE_TIMEOUT_MS = 120000
 
         function h(tag, props, kids) {
           var node = document.createElement(tag)
@@ -374,12 +380,12 @@
         }
 
         // Runs one request. Resolves true on success. The reply is the fresh snapshot.
-        function call(name, input, key, timeoutMs) {
+        function call(name, input, key) {
           pending[key] = true
           delete errors[key]
           render()
           return api.plugin
-            .request(name, input || {}, { timeoutMs: timeoutMs || 30000 })
+            .request(name, input || {}, { timeoutMs: WRITE_TIMEOUT_MS })
             .then(function (fresh) {
               accept(fresh)
               return true
@@ -405,7 +411,20 @@
             .catch(function (error) {
               errors.load = message(error)
             })
-            .then(render)
+            .then(renderUnlessTyping)
+        }
+
+        // Replacing the DOM under a focused text field breaks IME composition (Telex,
+        // VNI) and can drop characters. A change that arrives meanwhile is stored and
+        // drawn when the field loses focus. Actions the user just took still render at once.
+        function typing() {
+          var focused = document.activeElement
+          return !!(focused && focused.tagName === 'INPUT' && document.getElementById('app').contains(focused))
+        }
+
+        function renderUnlessTyping() {
+          if (typing()) dirty = true
+          else render()
         }
 
         function input(id, props) {
@@ -484,12 +503,12 @@
             var tokenId = 'token-' + key
             return h('div', { class: 'form' }, [
               input(tokenId, { type: 'password', placeholder: 'sk-ant-oat01-…', 'aria-label': 'New token' }),
-              h('div', { class: 'hint', text: 'Run `claude setup-token`, then paste the result. It stays on this computer.' }),
+              h('div', { class: 'hint', text: 'Run `claude setup-token`, then paste the result.' }),
               h('div', { class: 'actions' }, [
                 h('button', {
                   class: 'btn primary', text: busy ? 'Checking…' : 'Save token', disabled: busy,
                   onclick: function () {
-                    call('accounts.updateToken', { id: key, token: drafts[tokenId] }, key, 60000).then(function (ok) {
+                    call('accounts.updateToken', { id: key, token: drafts[tokenId] }, key).then(function (ok) {
                       if (ok) { delete drafts[tokenId]; openForm = null; render() }
                     })
                   }
@@ -567,15 +586,15 @@
           }
           return h('div', { class: 'add' }, [
             h('div', { class: 'form', style: 'border-top:0;margin-top:0;padding-top:0' }, [
-              input('add-label', { placeholder: 'Label, e.g. Work – me@company.com', 'aria-label': 'Label', maxlength: '80' }),
+              input('add-label', { placeholder: 'Label, e.g. Work', 'aria-label': 'Label', maxlength: '80' }),
               input('add-token', { type: 'password', placeholder: 'sk-ant-oat01-…', 'aria-label': 'Token' }),
-              h('div', { class: 'hint', text: 'Run `claude setup-token`, then paste the result. It stays on this computer.' }),
+              h('div', { class: 'hint', text: 'Run `claude setup-token`, then paste the result.' }),
               errors.add ? h('div', { class: 'error', text: errors.add }) : null,
               h('div', { class: 'actions' }, [
                 h('button', {
                   class: 'btn primary', text: busy ? 'Checking…' : 'Add', disabled: busy,
                   onclick: function () {
-                    call('accounts.add', { label: drafts['add-label'], token: drafts['add-token'] }, 'add', 60000).then(function (ok) {
+                    call('accounts.add', { label: drafts['add-label'], token: drafts['add-token'] }, 'add').then(function (ok) {
                       if (ok) { delete drafts['add-label']; delete drafts['add-token']; addOpen = false; render() }
                     })
                   }
@@ -591,6 +610,7 @@
 
         function render() {
           var app = document.getElementById('app')
+          dirty = false
           var focused = document.activeElement
           var restore = focused && focused.id ? { id: focused.id, start: focused.selectionStart, end: focused.selectionEnd } : null
           app.textContent = ''
@@ -633,11 +653,11 @@
               }),
               h('button', {
                 class: 'btn', text: busy ? 'Working…' : 'Refresh usage', disabled: busy || none,
-                onclick: function () { call('accounts.usage', {}, 'toolbar', 60000) }
+                onclick: function () { call('accounts.usage', {}, 'toolbar') }
               }),
               h('button', {
                 class: 'btn', text: 'Check tokens', disabled: busy || none,
-                onclick: function () { call('accounts.check', {}, 'toolbar', 60000) }
+                onclick: function () { call('accounts.check', {}, 'toolbar') }
               })
             ])
           )
@@ -669,8 +689,18 @@
           api.plugin.on('accounts.changed', function (fresh) {
             accept(fresh)
             delete errors.load
-            render()
+            renderUnlessTyping()
           })
+          // Let focus settle first: moving between two fields fires focusout on the first.
+          document.getElementById('app').addEventListener(
+            'focusout',
+            function () {
+              setTimeout(function () {
+                if (dirty && !typing()) render()
+              }, 0)
+            },
+            true
+          )
           document.addEventListener('visibilitychange', function () {
             if (!document.hidden) load()
           })
