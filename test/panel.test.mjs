@@ -37,3 +37,8 @@ test('the panel listens for the event the worker pushes', async () => {
   assert.ok(worker.includes("'accounts.changed'"))
   assert.ok(scripts[0].includes("'accounts.changed'"))
 })
+
+test('the panel ignores snapshots older than the newest it has seen', () => {
+  assert.match(scripts[0], /\bseq\b/)
+  assert.equal(scripts[0].match(/snapshot\s*=\s*fresh/g)?.length, 1, 'only the seq check assigns a snapshot')
+})

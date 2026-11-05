@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { toPanelSnapshot } from '../lib/snapshot.mjs'
+import { readSnapshot, toPanelSnapshot } from '../lib/snapshot.mjs'
 
 const status = {
   drift: false,
@@ -66,4 +66,25 @@ test('classifies expiry', () => {
 
 test('a failed usage reading becomes null', () => {
   assert.equal(toPanelSnapshot(status).accounts[1].usage, null)
+})
+
+test('toPanelSnapshot includes the seq it is given', () => {
+  assert.equal(toPanelSnapshot(status, 42).seq, 42)
+})
+
+test('seq grows with every read, even when an older read finishes last', async () => {
+  const slowStore = { status: () => new Promise((resolve) => setTimeout(() => resolve(status), 40)) }
+  const fastStore = { status: async () => status }
+  const older = readSnapshot(slowStore)
+  const newer = readSnapshot(fastStore)
+  const [first, second] = await Promise.all([older, newer])
+  assert.ok(second.seq > first.seq, 'seq is assigned before status() is awaited')
+  const third = await readSnapshot(fastStore)
+  assert.ok(third.seq > second.seq)
+})
+
+test('seq starts above the clock so it keeps growing after a worker restart', async () => {
+  const before = Date.now()
+  const snapshot = await readSnapshot({ status: async () => status })
+  assert.ok(snapshot.seq >= before)
 })

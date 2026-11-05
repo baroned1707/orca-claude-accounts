@@ -339,6 +339,7 @@
         var canEdit = !!(ready && api.host && api.host.has && api.host.has('shell.openExternal'))
 
         var snapshot = null
+        var lastSeq = null // highest snapshot number seen; older replies and pushes are dropped
         var pending = {} // key -> true while a request for that key is running
         var errors = {} // key -> last error message
         var drafts = {} // input id -> text typed so far
@@ -360,6 +361,14 @@
           return node
         }
 
+        // Keeps the snapshot unless a newer one was already shown. Returns whether it was kept.
+        function accept(fresh) {
+          if (lastSeq !== null && fresh && typeof fresh.seq === 'number' && fresh.seq < lastSeq) return false
+          if (fresh && typeof fresh.seq === 'number') lastSeq = fresh.seq
+          snapshot = fresh
+          return true
+        }
+
         function message(error) {
           return (error && error.message) || 'Something went wrong'
         }
@@ -372,7 +381,7 @@
           return api.plugin
             .request(name, input || {}, { timeoutMs: timeoutMs || 30000 })
             .then(function (fresh) {
-              snapshot = fresh
+              accept(fresh)
               return true
             })
             .catch(function (error) {
@@ -390,7 +399,7 @@
           return api.plugin
             .request('accounts.list', {}, { timeoutMs: 15000 })
             .then(function (fresh) {
-              snapshot = fresh
+              accept(fresh)
               delete errors.load
             })
             .catch(function (error) {
@@ -658,7 +667,7 @@
         render()
         if (ready) {
           api.plugin.on('accounts.changed', function (fresh) {
-            snapshot = fresh
+            accept(fresh)
             delete errors.load
             render()
           })
