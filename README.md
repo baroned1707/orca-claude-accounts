@@ -36,7 +36,7 @@ logging in and out. Each account uses a one-year token from `claude setup-token`
 
 You need:
 
-- [Orca](https://github.com/stablyai/orca) **1.4 or newer** (macOS, Windows or Linux)
+- [Orca](https://github.com/stablyai/orca) **1.4.248 or newer** (macOS, Windows or Linux)
 - **Claude Code** installed (`claude` on your PATH)
 - A **Claude subscription** (Pro, Max, Team or Enterprise) for each account you want to add
 - Linux only: `secret-tool` (package `libsecret-tools` or `libsecret`) and a running
@@ -82,7 +82,7 @@ Choose **one** of the two options.
    The `#v0.12.0` pins the exact release; Orca requires a tag or commit after `#`.
 3. Enable **Claude Accounts** and approve its permission (it only shows notifications).
 
-### Option B — developer path (live sidebar panel, easy updates)
+### Option B — developer path (easy updates)
 
 ```sh
 git clone --branch v0.12.0 https://github.com/baroned1707/orca-claude-accounts.git
@@ -93,7 +93,6 @@ npm link        # optional: adds the `claude-accounts` command (Node.js 18+)
 Then in Orca: **Settings → Plugins → Developer plugin paths** → add the cloned
 folder, enable **Claude Accounts** and approve its permission.
 
-Option B is needed for a sidebar panel that updates live (see [step 7](#7-the-sidebar-panel)).
 To upgrade later: `git fetch --tags && git checkout v<new version>`.
 
 > Orca asks you to approve the plugin again whenever its keyboard shortcuts change
@@ -164,41 +163,29 @@ Open Orca's right sidebar (`⌘L` / `Ctrl+L`) and click the **bot** icon:
 
 <img src="docs/images/sidebar-panel.png" alt="Sidebar panel" width="320">
 
-It shows the account in use, every account with its token age and last usage, and
-the shortcuts for your platform (`⌘` on macOS, `Ctrl` on Windows/Linux).
+It shows the account in use, every account with its token age, expiry and last usage,
+and switches the account with one press. On the desktop app the **⋯** menu next to an
+account renames it, updates its token or removes it, and **Add account** adds one. The
+panel follows changes made from the command palette, the CLI or the Manage page.
+
+A status bar item shows the account in use and turns yellow when its token is close to
+expiry; pressing it lists your accounts.
 
 **On Orca mobile and tablets** the panel adapts: larger text and touch-sized rows,
-two columns on wide screens, safe-area padding, and — since there is no keyboard —
-a note pointing to the Manage page instead of shortcuts.
+two columns on wide screens and safe-area padding.
 
-## 7b. Use it from your phone (Orca mobile)
+## 7b. Use it from your phone or another computer
 
-Orca mobile shows your computer's browser tabs live, so the **Manage accounts
-page works from your phone** — add, switch, refresh usage, everything.
+The sidebar panel works wherever Orca shows plugin panels: Orca mobile, the browser
+client (`orca serve`) and a desktop paired to an Orca server. It lists accounts,
+switches the account in use, refreshes usage and checks tokens. Adding an account,
+changing a token, renaming and removing are done in the desktop app, so a token is not
+typed on a remote client.
 
-1. On your computer, open it once with `⌘⇧M` (or *Claude Account: Manage Accounts…*).
-   This creates a **Claude Accounts** browser tab in the current worktree.
-2. On your phone, open that worktree in Orca and pick the **Claude Accounts** tab.
-   Switch the tab to Orca's **mobile view** for a phone-sized layout.
-3. No tab? Open any browser tab in Orca mobile and type the address shown under
-   **Use it from Orca mobile** in the sidebar panel.
+The full Manage page (`⌘⇧M`) still exists and, if you open its browser tab on your
+phone, still accepts tokens there. The panel replaces it in the next release.
 
-The address stays the same across restarts and updates, so the tab keeps working;
-`⌘⇧M` reuses that tab instead of opening another. While the tab exists the page keeps
-the manager running (it stops after 12 hours with no open tab); if it stopped, the
-page shows *Reconnecting…* until you run *Manage Accounts…* on the computer again.
-
-<p>
-  <img src="docs/images/manage-mobile.png" alt="Manage accounts on a phone" width="300">
-  &nbsp;
-  <img src="docs/images/sidebar-panel-mobile.png" alt="Sidebar panel on a phone" width="300">
-</p>
- The panel is **read-only** — Orca doesn't let plugin panels run
-commands — so use `⌘⇧M` to change anything.
-
-It updates live only with the **developer path** install (Option B): the plugin
-refreshes it by rewriting `panel.html` in its folder, which Orca can't do for a
-Git-installed (content-locked) copy. It never contains tokens or emails.
+<img src="docs/images/sidebar-panel-mobile.png" alt="Sidebar panel on a phone" width="300">
 
 ## 8. Command line (optional)
 
@@ -251,8 +238,11 @@ it while running**, so new and running sessions use the selected account
   numbers Claude Code uses. Each reading spends a tiny amount of usage.
 - **Email** — the plugin records each token's organization id and shows the email
   when it matches an account signed in on this computer with `/login`.
-- **Manage page** — plugin panels can't exchange data with the plugin, so the page
-  is served by a small local server running as its own process: bound to
+- **Sidebar panel** — asks the plugin worker through Orca (`plugin.request`); replies
+  hold labels, dates, expiry and usage only, never tokens, emails or organization ids.
+  A token typed in the desktop panel travels to the worker through Orca's plugin bridge
+  and is not returned.
+- **Manage page** — a small local server running as its own process: bound to
   `127.0.0.1`, behind a random 256-bit URL secret, `Host`-checked, JSON-only writes
   with a custom header, never returns tokens; it keeps the same address across
   restarts and exits after 12 hours without an open page.
