@@ -1,26 +1,54 @@
-// Orca plugin worker. "Manage Accounts…" serves the account manager page and
-// opens it as a tab in Orca's built-in browser, styled with Orca's own theme;
-// the other commands switch accounts straight from the palette or a keybinding.
+// Orca plugin worker. Commands switch accounts from the palette or a keybinding;
+// the sidebar panel (panel.html) asks this worker for everything it shows and
+// does, so it works on desktop, Orca mobile and the browser client alike. The
+// worker also pushes changes to open panels and keeps the status bar item current.
+// "Manage Accounts…" still opens the full manager page (removed in a later release).
+import { dirname } from 'node:path'
+import { createAccountsApi } from './lib/accounts-api.mjs'
 import { openUrl } from './lib/open-in-orca.mjs'
-import { syncPanel } from './lib/panel.mjs'
+import { createChangePublisher } from './lib/publisher.mjs'
 import { ensureManagerServer } from './lib/server-process.mjs'
-import {
-  EXPIRY_WARNING_DAYS,
-  accountRow,
-  describeAccount,
-  status,
-  useAccount,
-  useNext,
-  useNone
-} from './lib/store.mjs'
+import { readSnapshot } from './lib/snapshot.mjs'
+import { statusBarFor } from './lib/status-bar.mjs'
+import { watchFiles } from './lib/store-watch.mjs'
+import * as store from './lib/store.mjs'
 
 const SLOT_COUNT = 5
+
+let watcher = null
 
 export default function activate(orca) {
   const notify = (title, body) =>
     orca.host.call('notifications.show', { title, body: body?.slice(0, 1000) }).catch((error) => {
       orca.log(`notification failed: ${error?.message ?? error}`)
     })
+
+  // Older Orca (or a client without a status bar) lacks the method: skip it.
+  const updateStatusBar = (snapshot) => {
+    if (!orca.host.has('statusBar.update')) return Promise.resolve()
+    return orca.host.call('statusBar.update', statusBarFor(snapshot)).catch((error) => {
+      orca.log(`status bar update failed: ${error?.message ?? error}`)
+    })
+  }
+
+  const publisher = createChangePublisher({
+    read: () => readSnapshot(store),
+    publish: async (snapshot) => {
+      try {
+        orca.panels.post('accounts.changed', snapshot)
+      } catch (error) {
+        orca.log(`panel push failed: ${error?.message ?? error}`)
+      }
+      await updateStatusBar(snapshot)
+    },
+    log: orca.log
+  })
+
+  // Panel requests. Each handler returns the fresh snapshot.
+  const api = createAccountsApi(store, { onChange: () => void publisher.refresh() })
+  for (const [name, handler] of Object.entries(api)) {
+    orca.panels.handle(name, (input) => handler(input))
+  }
 
   const announceSwitch = async (account) => {
     if (account) {
@@ -39,7 +67,7 @@ export default function activate(orca) {
   const run = (label, action) => async () => {
     try {
       const result = await action()
-      await syncPanel(orca.log)
+      await publisher.refresh()
       return { ok: true, ...result }
     } catch (error) {
       const message = error?.message ?? String(error)
@@ -49,8 +77,17 @@ export default function activate(orca) {
     }
   }
 
-  // Catch up with changes made while the worker was not running.
-  void syncPanel(orca.log)
+  // Catch up with changes made while the worker was not running, then follow the
+  // store (the CLI and the manager page write to it too).
+  void publisher.refresh()
+  watcher?.close()
+  watcher = watchFiles({
+    targets: [
+      { dir: store.configDir(), names: ['accounts.json'] },
+      { dir: dirname(store.claudeSettingsPath()), names: ['settings.json'] }
+    ],
+    onChange: () => void publisher.refresh()
+  })
 
   orca.commands.register(
     'manage',
@@ -64,19 +101,19 @@ export default function activate(orca) {
     })
   )
 
-  orca.commands.register('next', run('switch', async () => announceSwitch(await useNext())))
+  orca.commands.register('next', run('switch', async () => announceSwitch(await store.useNext())))
 
   for (let slot = 1; slot <= SLOT_COUNT; slot++) {
     orca.commands.register(
       `slot-${slot}`,
-      run(`slot ${slot}`, async () => announceSwitch(await useAccount(String(slot))))
+      run(`slot ${slot}`, async () => announceSwitch(await store.useAccount(String(slot))))
     )
   }
 
   orca.commands.register(
     'off',
     run('turn off', async () => {
-      await useNone()
+      await store.useNone()
       return announceSwitch(null)
     })
   )
@@ -84,12 +121,12 @@ export default function activate(orca) {
   orca.commands.register(
     'show',
     run('show', async () => {
-      const snapshot = await status()
+      const snapshot = await store.status()
       if (!snapshot.accounts.length) {
-        await notify('Claude accounts', 'None yet. Open "Claude Account: Manage Accounts…" to add one.')
+        await notify('Claude accounts', 'None yet. Open the Claude Accounts panel to add one.')
         return {}
       }
-      const lines = snapshot.accounts.map(accountRow)
+      const lines = snapshot.accounts.map(store.accountRow)
       if (snapshot.drift) lines.push('⚠ settings.json token differs from the active account')
       await notify(`Claude account: ${snapshot.active?.label ?? 'default login'}`, lines.join('\n'))
       return {}
@@ -97,15 +134,21 @@ export default function activate(orca) {
   )
 
   // Warn once per worker start about tokens close to their one-year expiry.
-  status()
+  store
+    .status()
     .then((snapshot) => {
-      const expiring = snapshot.accounts.filter((account) => account.daysLeft <= EXPIRY_WARNING_DAYS)
+      const expiring = snapshot.accounts.filter((account) => account.daysLeft <= store.EXPIRY_WARNING_DAYS)
       if (expiring.length) {
         return notify(
           'Claude tokens expiring',
-          `${expiring.map(describeAccount).join(', ')}. Renew in Manage Accounts → Update token.`
+          `${expiring.map(store.describeAccount).join(', ')}. Renew in the Claude Accounts panel → Update token.`
         )
       }
     })
     .catch((error) => orca.log(`expiry check failed: ${error?.message ?? error}`))
+}
+
+export function deactivate() {
+  watcher?.close()
+  watcher = null
 }
