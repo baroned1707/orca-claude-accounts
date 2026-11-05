@@ -12,6 +12,7 @@ import { readSnapshot } from './lib/snapshot.mjs'
 import { statusBarFor } from './lib/status-bar.mjs'
 import { watchFiles } from './lib/store-watch.mjs'
 import * as store from './lib/store.mjs'
+import { createWriteQueue } from './lib/write-queue.mjs'
 
 const SLOT_COUNT = 5
 
@@ -44,8 +45,12 @@ export default function activate(orca) {
     log: orca.log
   })
 
+  // One queue for everything that writes the store: panel handlers and the
+  // switching commands below, so a slow panel write cannot be undone by a command.
+  const serial = createWriteQueue()
+
   // Panel requests. Each handler returns the fresh snapshot.
-  const api = createAccountsApi(store, { onChange: () => void publisher.refresh() })
+  const api = createAccountsApi(store, { onChange: () => void publisher.refresh(), serial })
   for (const [name, handler] of Object.entries(api)) {
     orca.panels.handle(name, (input) => handler(input))
   }
@@ -101,19 +106,19 @@ export default function activate(orca) {
     })
   )
 
-  orca.commands.register('next', run('switch', async () => announceSwitch(await store.useNext())))
+  orca.commands.register('next', run('switch', async () => announceSwitch(await serial(() => store.useNext()))))
 
   for (let slot = 1; slot <= SLOT_COUNT; slot++) {
     orca.commands.register(
       `slot-${slot}`,
-      run(`slot ${slot}`, async () => announceSwitch(await store.useAccount(String(slot))))
+      run(`slot ${slot}`, async () => announceSwitch(await serial(() => store.useAccount(String(slot)))))
     )
   }
 
   orca.commands.register(
     'off',
     run('turn off', async () => {
-      await store.useNone()
+      await serial(() => store.useNone())
       return announceSwitch(null)
     })
   )

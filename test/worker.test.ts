@@ -40,3 +40,13 @@ test('an unknown account id is reported to the panel, not swallowed', () =>
     await assert.rejects(worker.request('accounts.use', { id: 'acct-missing' }), /unknown account/)
     await worker.deactivate()
   }))
+
+test('commands and panel writes go through one shared write queue', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const source = await readFile(new URL('../main.mjs', import.meta.url), 'utf8')
+  assert.equal(source.match(/createWriteQueue\(\)/g)?.length, 1, 'one queue')
+  assert.match(source, /createAccountsApi\(store, \{[^}]*serial[^}]*\}\)/)
+  for (const command of ['next', 'slot', 'off']) {
+    assert.match(source, new RegExp(`serial\\([^\\n]*${command === 'slot' ? 'useAccount' : command === 'next' ? 'useNext' : 'useNone'}`), `${command} is queued`)
+  }
+})

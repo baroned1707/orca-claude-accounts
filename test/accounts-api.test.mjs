@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createAccountsApi } from '../lib/accounts-api.mjs'
+import { createWriteQueue } from '../lib/write-queue.mjs'
 
 function fakeStore({ gate } = {}) {
   const calls = []
@@ -89,4 +90,20 @@ test('a failed write rejects but does not block the next one', async () => {
   await assert.rejects(api['accounts.use']({ id: 'acct-1' }), /no stored token/)
   await api['accounts.rename']({ id: 'acct-1', label: 'Y' })
   assert.ok(store.calls.includes('renameAccount:acct-1,Y'))
+})
+
+test('a command queued on the same queue waits behind an in-flight panel write', async () => {
+  let release
+  const gate = new Promise((resolve) => (release = resolve))
+  const store = fakeStore({ gate })
+  const serial = createWriteQueue()
+  const api = createAccountsApi(store, { serial })
+  const panelWrite = api['accounts.use']({ id: 'acct-1' })
+  // main.mjs queues the store-calling part of a command exactly like this.
+  const command = serial(() => store.useNext())
+  await new Promise((resolve) => setTimeout(resolve, 30))
+  assert.deepEqual(store.calls, ['useAccount:start'], 'the command must wait for the panel write')
+  release()
+  await Promise.all([panelWrite, command])
+  assert.deepEqual(store.calls, ['useAccount:start', 'useAccount:acct-1', 'useNext:start', 'useNext:'])
 })
