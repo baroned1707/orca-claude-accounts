@@ -12,11 +12,12 @@ import { readSnapshot } from './lib/snapshot.mjs'
 import { statusBarFor } from './lib/status-bar.mjs'
 import { watchFiles } from './lib/store-watch.mjs'
 import * as store from './lib/store.mjs'
+import { createTokenChangeGate } from './lib/token-change-gate.mjs'
 import { createWriteQueue } from './lib/write-queue.mjs'
 
 const SLOT_COUNT = 5
 
-let watcher = null
+let watchers = []
 
 export default function activate(orca) {
   const notify = (title, body) =>
@@ -83,16 +84,25 @@ export default function activate(orca) {
   }
 
   // Catch up with changes made while the worker was not running, then follow the
-  // store (the CLI and the manager page write to it too).
+  // store (the CLI and the manager page write to it too). A change to settings.json
+  // refreshes only when its token changed, because a refresh reads the Keychain.
   void publisher.refresh()
-  watcher?.close()
-  watcher = watchFiles({
-    targets: [
-      { dir: store.configDir(), names: ['accounts.json'] },
-      { dir: dirname(store.claudeSettingsPath()), names: ['settings.json'] }
-    ],
-    onChange: () => void publisher.refresh()
+  const gate = createTokenChangeGate({
+    read: () => store.readActiveToken(),
+    onChange: () => publisher.refresh()
   })
+  void gate.check() // baseline: the token as it is now
+  for (const watcher of watchers) watcher.close()
+  watchers = [
+    watchFiles({
+      targets: [{ dir: store.configDir(), names: ['accounts.json'] }],
+      onChange: () => void publisher.refresh()
+    }),
+    watchFiles({
+      targets: [{ dir: dirname(store.claudeSettingsPath()), names: ['settings.json'] }],
+      onChange: () => void gate.check()
+    })
+  ]
 
   orca.commands.register(
     'manage',
@@ -154,6 +164,6 @@ export default function activate(orca) {
 }
 
 export function deactivate() {
-  watcher?.close()
-  watcher = null
+  for (const watcher of watchers) watcher.close()
+  watchers = []
 }
