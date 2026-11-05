@@ -76,16 +76,16 @@ Choose **one** of the two options.
 2. Choose to install a plugin from **Git** and enter this URL **including the `#` part**:
 
    ```
-   https://github.com/baroned1707/orca-claude-accounts.git#v0.12.0
+   https://github.com/baroned1707/orca-claude-accounts.git#v0.13.0
    ```
 
-   The `#v0.12.0` pins the exact release; Orca requires a tag or commit after `#`.
+   The `#v0.13.0` pins the exact release; Orca requires a tag or commit after `#`.
 3. Enable **Claude Accounts** and approve its permission (it only shows notifications).
 
 ### Option B — developer path (easy updates)
 
 ```sh
-git clone --branch v0.12.0 https://github.com/baroned1707/orca-claude-accounts.git
+git clone --branch v0.13.0 https://github.com/baroned1707/orca-claude-accounts.git
 cd orca-claude-accounts
 npm link        # optional: adds the `claude-accounts` command (Node.js 18+)
 ```
