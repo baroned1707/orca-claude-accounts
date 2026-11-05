@@ -4,7 +4,6 @@
 // stays up while the tab is open.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
-import { syncPanel } from '../lib/panel.mjs'
 import { notifyDesktop } from '../lib/platform.mjs'
 import { codeFingerprint, serverStatePath } from '../lib/server-process.mjs'
 import { createManagerServer } from '../lib/server.mjs'
@@ -40,7 +39,6 @@ const server = createManagerServer({
   secret: previous.secret,
   keepAlive: true,
   log,
-  onChange: () => syncPanel(log),
   onSwitch: async (account) =>
     notify(
       account ? `Claude account → ${account.label}` : 'Claude account → default login',
@@ -67,5 +65,3 @@ const cleanup = () => {
 process.on('exit', cleanup)
 for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(signal, () => process.exit(0))
 log(`listening (pid ${process.pid})`)
-// The sidebar panel shows this address for Orca mobile.
-await syncPanel(log)
