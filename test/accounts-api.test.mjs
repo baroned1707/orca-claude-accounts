@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { createAccountsApi } from '../lib/accounts-api.mjs'
+import { createAccountsApi, publicMessage } from '../lib/accounts-api.mjs'
 import { createWriteQueue } from '../lib/write-queue.mjs'
 
 function fakeStore({ gate } = {}) {
@@ -106,4 +106,70 @@ test('a command queued on the same queue waits behind an in-flight panel write',
   release()
   await Promise.all([panelWrite, command])
   assert.deepEqual(store.calls, ['useAccount:start', 'useAccount:acct-1', 'useNext:start', 'useNext:'])
+})
+
+test('publicMessage keeps the messages the store writes on purpose', () => {
+  const allowed = [
+    'label cannot be empty',
+    'label is longer than 80 characters',
+    'that does not look like a `claude setup-token` token (expected sk-ant-oat01-…)',
+    'this token is already saved as "Work"',
+    'token rejected by Anthropic: invalid bearer token',
+    'no account in slot 7 (2 configured)',
+    'unknown account "acct-missing"',
+    'several accounts are labeled "Work"; use the slot number',
+    'no stored token for "Work"; update its token',
+    'no accounts yet; add one first'
+  ]
+  for (const text of allowed) assert.equal(publicMessage(new Error(text)), text)
+})
+
+test('publicMessage hides the home folder in the settings.json message', () => {
+  const error = new Error('/Users/jane/.claude/settings.json is not valid JSON; fix it before switching accounts')
+  assert.equal(publicMessage(error), '~/.claude/settings.json is not valid JSON; fix it before switching accounts')
+  const windows = new Error('C:\\Users\\jane\\.claude\\settings.json is not valid JSON; fix it before switching accounts')
+  assert.equal(publicMessage(windows), '~/.claude/settings.json is not valid JSON; fix it before switching accounts')
+})
+
+test('publicMessage replaces everything else and never echoes it', () => {
+  const generic = 'Something went wrong. Details are in the plugin log.'
+  const leaking = [
+    "EACCES: permission denied, open '/Users/jane/.config/claude-accounts/accounts.json'",
+    'could not store the token in the macOS Keychain: security: SecKeychainItemCreateFromContent failed',
+    'boom sk-ant-oat01-secret',
+    'unknown account "sk-ant-oat01-secret"',
+    'unknown account "x"\n/Users/jane/.claude',
+    'Unexpected token } in JSON at position 4',
+    'label cannot be empty and also /Users/jane'
+  ]
+  for (const text of leaking) {
+    const result = publicMessage(new Error(text))
+    assert.equal(result, generic, text)
+    assert.ok(!/jane|secret|Keychain|EACCES/.test(result))
+  }
+  assert.equal(publicMessage(undefined), generic)
+  assert.equal(publicMessage('a string'), generic)
+})
+
+test('a failing handler rejects with the public message and logs the original', async () => {
+  const store = fakeStore()
+  store.renameAccount = async () => {
+    throw new Error("EACCES: permission denied, open '/Users/jane/.config/accounts.json'")
+  }
+  const logged = []
+  const api = createAccountsApi(store, { log: (line) => logged.push(line) })
+  await assert.rejects(
+    api['accounts.rename']({ id: 'acct-1', label: 'X' }),
+    (error) => {
+      assert.equal(error.message, 'Something went wrong. Details are in the plugin log.')
+      assert.equal(error.cause, undefined)
+      return true
+    }
+  )
+  assert.equal(logged.length, 1)
+  assert.match(logged[0], /EACCES.*\/Users\/jane/)
+  store.status = async () => {
+    throw new Error('/Users/jane/.claude/settings.json is not valid JSON; fix it before switching accounts')
+  }
+  await assert.rejects(api['accounts.list'](), (error) => !error.message.includes('jane'))
 })

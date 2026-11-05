@@ -50,7 +50,7 @@ export default function activate(orca) {
   const serial = createWriteQueue()
 
   // Panel requests. Each handler returns the fresh snapshot.
-  const api = createAccountsApi(store, { onChange: () => void publisher.refresh(), serial })
+  const api = createAccountsApi(store, { onChange: () => void publisher.refresh(), serial, log: orca.log })
   for (const [name, handler] of Object.entries(api)) {
     orca.panels.handle(name, (input) => handler(input))
   }
