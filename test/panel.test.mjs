@@ -55,6 +55,13 @@ test('the panel does not re-render under a focused text field', () => {
   assert.match(scripts[0], /dirty/)
 })
 
+test('a press is not lost when a redraw is waiting for the field to lose focus', () => {
+  assert.match(scripts[0], /pointerIsDown/)
+  assert.match(scripts[0], /['"]pointerdown['"]/)
+  assert.match(scripts[0], /['"]pointerup['"]/)
+  assert.match(scripts[0], /['"]pointercancel['"]/)
+})
+
 test('the panel copy makes no claim it cannot keep', () => {
   assert.ok(!html.includes('me@'), 'no email address in examples (labels are shown on remote clients)')
   assert.ok(!html.includes('It stays on this computer'))

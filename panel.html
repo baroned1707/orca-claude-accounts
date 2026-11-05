@@ -349,6 +349,7 @@
         var openForm = null // { id, kind } with kind menu | rename | token | remove
         var addOpen = false
         var dirty = false // a newer snapshot arrived while a text field had focus
+        var pointerIsDown = false // a mouse button, pen or finger is pressed right now
         // Writes queue behind a long token check on the worker, so they get Orca's maximum wait.
         var WRITE_TIMEOUT_MS = 120000
 
@@ -692,12 +693,26 @@
             renderUnlessTyping()
           })
           // Let focus settle first: moving between two fields fires focusout on the first.
+          // After the deferred redraw the field is checked again, so a new typing session is left alone.
+          function redrawWhenSettled() {
+            setTimeout(function () {
+              if (dirty && !typing()) render()
+            }, 0)
+          }
+          // Pressing a button blurs the field on pointerdown. Redrawing then could replace the
+          // button before the release, and the click would be lost. So while a press is held the
+          // redraw waits; the timer from the release runs after the click of the same press.
+          document.addEventListener('pointerdown', function () { pointerIsDown = true }, true)
+          function endPress() {
+            pointerIsDown = false
+            if (dirty) redrawWhenSettled()
+          }
+          document.addEventListener('pointerup', endPress, true)
+          document.addEventListener('pointercancel', endPress, true)
           document.getElementById('app').addEventListener(
             'focusout',
             function () {
-              setTimeout(function () {
-                if (dirty && !typing()) render()
-              }, 0)
+              if (!pointerIsDown) redrawWhenSettled()
             },
             true
           )
