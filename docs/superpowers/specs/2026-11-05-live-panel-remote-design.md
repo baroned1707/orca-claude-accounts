@@ -132,3 +132,30 @@ rename, update token, remove, check and usage, and the owner has used it on a ph
 - Which host (SSH or WSL) for the spike.
 - Keep or drop `publisher`.
 - Whether the owner uses Orca's managed Claude accounts at the same time.
+
+## Verification results (2026-11-05, Orca 1.4.248 desktop, macOS)
+
+Run against the real plugin loaded as a development folder (`orca plugin dev load`), version 0.13.0.
+
+Confirmed:
+- The panel renders in Orca with the app theme (dark) and real data; the `⋯` menu and **Add account**
+  show on desktop, so `orca.host.has('shell.openExternal')` is true there.
+- The status bar item shows the active account (`Claude: <label>`) and follows a switch made from the
+  worker handler and from the CLI (another process, noticed by the file watchers within 3 seconds).
+- `accounts.list` through the worker returns only id, slot, label, active, dates, expiry, check state and
+  usage; no `sk-ant`, e-mail or organization id.
+- A token-shaped test string sent through `accounts.add` was rejected by Anthropic and not stored; the
+  error reached the caller as `token rejected by Anthropic: …`; neither `orca plugin logs` nor the
+  plugin's own log contains the string. This used `orca plugin dev request`, which Orca documents as the
+  same path as a panel's `plugin.request`; a panel call itself was not exercised.
+- Switching accounts writes the new token to `~/.claude/settings.json`; switching back restored the
+  original token (compared by hash).
+
+Still not verified:
+- Orca mobile, the browser client (`orca serve`) and a desktop paired to an Orca server: not tested.
+- Which machine's worker answers a paired desktop's panel.
+- Whether Orca's audit log records `plugin.request` inputs (`orca plugin logs` does not).
+- Locked-keyring behaviour; touch input; light theme.
+- No README screenshot was taken for the repository: the live panel shows real account names, which
+  must not be committed to a public repository.
+
