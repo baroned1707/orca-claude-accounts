@@ -2,8 +2,24 @@
 <html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Claude Accounts</title>
     <style>
-      /* Colors come from the design tokens Orca injects into plugin panels. */
+      /* Everything is inline: Orca's browser client loads this file as one sandboxed
+         document that cannot fetch other files. Colors come from Orca's frame variables. */
+      :root {
+        --bg: var(--orca-background, var(--background, Canvas));
+        --fg: var(--orca-foreground, var(--foreground, CanvasText));
+        --card: var(--orca-card, var(--card-bg, transparent));
+        --muted: var(--orca-muted, rgba(128, 128, 128, 0.15));
+        --muted-fg: var(--orca-muted-foreground, var(--muted-foreground, GrayText));
+        --border: var(--orca-border, rgba(128, 128, 128, 0.35));
+        --primary: var(--orca-primary, Highlight);
+        --primary-fg: var(--orca-primary-foreground, HighlightText);
+        --accent: var(--orca-accent, rgba(128, 128, 128, 0.12));
+        --danger: var(--orca-destructive, #d33);
+        --radius: var(--orca-radius, 8px);
+      }
       * {
         box-sizing: border-box;
       }
@@ -13,15 +29,17 @@
       html,
       body {
         margin: 0;
-        background: var(--background);
-        color: var(--foreground);
-        font-family: var(--panel-font, -apple-system, BlinkMacSystemFont, sans-serif);
+        background: var(--bg);
+        color: var(--fg);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 12px;
         line-height: 1.45;
         -webkit-font-smoothing: antialiased;
       }
       body {
-        padding: 12px;
+        padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+          max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+        overflow-x: hidden;
       }
       h1 {
         margin: 0 0 10px;
@@ -29,19 +47,25 @@
         font-weight: 600;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        color: var(--muted-foreground);
+        color: var(--muted-fg);
+      }
+      .alert {
+        margin-bottom: 10px;
+        padding: 8px 10px;
+        border-radius: calc(var(--radius) - 2px);
+        border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+        color: var(--danger);
       }
       .current {
+        margin-bottom: 10px;
         padding: 10px 11px;
-        margin-bottom: 12px;
         border: 1px solid var(--border);
-        border-radius: var(--radius, 10px);
+        border-radius: var(--radius);
         background: var(--card);
-        color: var(--card-foreground);
       }
       .current .k {
         font-size: 11px;
-        color: var(--muted-foreground);
+        color: var(--muted-fg);
       }
       .current .v {
         display: flex;
@@ -57,37 +81,68 @@
         height: 7px;
         flex: none;
         border-radius: 50%;
-        background: var(--muted-foreground);
+        background: var(--muted-fg);
       }
       .dot.on {
         background: var(--primary);
         box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
       }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .btn {
+        min-height: 28px;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) - 2px);
+        background: transparent;
+        color: var(--fg);
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .btn:hover:not(:disabled) {
+        background: var(--accent);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .btn.primary {
+        border-color: transparent;
+        background: var(--primary);
+        color: var(--primary-fg);
+      }
+      .btn.danger {
+        border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+        color: var(--danger);
+      }
+      .btn.icon {
+        min-width: 28px;
+        padding: 0;
+      }
       .list {
         display: grid;
-        gap: 2px;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+        gap: 8px 10px;
       }
       .row {
         position: relative;
-        display: flex;
-        align-items: flex-start;
-        gap: 9px;
         padding: 8px 9px;
-        border-radius: calc(var(--radius, 10px) - 2px);
+        border: 1px solid transparent;
+        border-radius: calc(var(--radius) - 2px);
       }
       .row.active {
         background: var(--accent);
-        color: var(--accent-foreground);
+        border-color: var(--border);
       }
-      .row.active::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 7px;
-        bottom: 7px;
-        width: 2px;
-        border-radius: 2px;
-        background: var(--primary);
+      .row-main {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
       }
       .slot {
         width: 18px;
@@ -98,13 +153,13 @@
         margin-top: 1px;
         border-radius: 5px;
         border: 1px solid var(--border);
-        color: var(--muted-foreground);
+        color: var(--muted-fg);
         font: 600 10px ui-monospace, Menlo, monospace;
       }
       .row.active .slot {
         background: var(--primary);
         border-color: var(--primary);
-        color: var(--primary-foreground);
+        color: var(--primary-fg);
       }
       .info {
         min-width: 0;
@@ -127,7 +182,7 @@
         padding: 0 6px;
         border-radius: 999px;
         border: 1px solid var(--border);
-        color: var(--muted-foreground);
+        color: var(--muted-fg);
         font-size: 10.5px;
         font-weight: 500;
         white-space: nowrap;
@@ -135,15 +190,15 @@
       .badge.inuse {
         border-color: transparent;
         background: var(--primary);
-        color: var(--primary-foreground);
+        color: var(--primary-fg);
       }
       .badge.warn,
       .badge.bad {
-        color: var(--destructive);
-        border-color: color-mix(in srgb, var(--destructive) 45%, transparent);
+        color: var(--danger);
+        border-color: color-mix(in srgb, var(--danger) 45%, transparent);
       }
       .badge.bad {
-        background: color-mix(in srgb, var(--destructive) 12%, transparent);
+        background: color-mix(in srgb, var(--danger) 12%, transparent);
       }
       .usage {
         display: grid;
@@ -155,16 +210,16 @@
         display: flex;
         justify-content: space-between;
         font-size: 10.5px;
-        color: var(--muted-foreground);
+        color: var(--muted-fg);
       }
       .mini-pct {
         font-weight: 600;
-        color: var(--foreground);
+        color: var(--fg);
         font-variant-numeric: tabular-nums;
       }
       .mini-pct.high,
       .mini-pct.full {
-        color: var(--destructive);
+        color: var(--danger);
       }
       .mini-track {
         height: 4px;
@@ -178,183 +233,495 @@
         background: var(--primary);
       }
       .mini-fill.high {
-        background: color-mix(in srgb, var(--destructive) 60%, var(--primary));
+        background: color-mix(in srgb, var(--danger) 60%, var(--primary));
       }
       .mini-fill.full {
-        background: var(--destructive);
+        background: var(--danger);
       }
-      .empty,
-      .note {
-        padding: 10px 2px;
-        color: var(--muted-foreground);
-      }
-      .alert {
-        margin-bottom: 12px;
-        padding: 8px 10px;
-        border-radius: calc(var(--radius, 10px) - 2px);
-        border: 1px solid color-mix(in srgb, var(--destructive) 45%, transparent);
-        color: var(--destructive);
-      }
-      .cta {
-        display: grid;
-        gap: 7px;
-        margin-bottom: 12px;
-        padding: 10px 11px;
-        border-radius: var(--radius, 10px);
-        background: var(--primary);
-        color: var(--primary-foreground);
-      }
-      .cta-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-      }
-      .cta-row span {
-        opacity: 0.8;
-      }
-      .cta kbd {
-        border-color: color-mix(in srgb, var(--primary-foreground) 30%, transparent);
-        background: color-mix(in srgb, var(--primary-foreground) 12%, transparent);
-        color: var(--primary-foreground);
-      }
-      .keys {
-        margin-top: 14px;
-        padding-top: 12px;
-        border-top: 1px solid var(--border);
+      .form {
         display: grid;
         gap: 6px;
-        color: var(--muted-foreground);
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border);
       }
-      .keys div {
+      .form .actions,
+      .menu {
         display: flex;
-        justify-content: space-between;
-        gap: 8px;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
       }
-      kbd {
-        flex: none;
-        padding: 0 5px;
-        border-radius: 4px;
+      .form .actions {
+        margin-top: 0;
+      }
+      input {
+        width: 100%;
+        min-height: 28px;
+        padding: 0 8px;
         border: 1px solid var(--border);
-        background: var(--muted);
-        color: var(--foreground);
-        font: 500 10.5px ui-monospace, Menlo, monospace;
-        line-height: 17px;
+        border-radius: calc(var(--radius) - 2px);
+        background: var(--bg);
+        color: var(--fg);
+        font: inherit;
+      }
+      .hint,
+      .note,
+      .empty {
+        color: var(--muted-fg);
+      }
+      .empty {
+        padding: 10px 2px;
+      }
+      .error {
+        margin-top: 6px;
+        color: var(--danger);
+        word-break: break-word;
+      }
+      .add {
+        margin-top: 12px;
+        padding: 10px 11px;
+        border: 1px dashed var(--border);
+        border-radius: var(--radius);
       }
       .stamp {
         margin-top: 12px;
         font-size: 10.5px;
-        color: var(--muted-foreground);
+        color: var(--muted-fg);
+      }
+      @media (max-width: 250px) {
+        .usage {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
+      }
+      /* Touch screens (Orca mobile, tablets): larger text and hit areas. */
+      @media (hover: none) and (pointer: coarse) {
+        html,
+        body {
+          font-size: 14px;
+        }
+        .btn,
+        input {
+          min-height: 40px;
+        }
+        .btn.icon {
+          min-width: 40px;
+        }
+        .row {
+          padding: 11px 10px;
+        }
+        .badge {
+          height: 20px;
+          font-size: 11.5px;
+        }
+        .mini-head {
+          font-size: 12px;
+        }
+        .mini-track {
+          height: 6px;
+        }
       }
     </style>
   </head>
   <body>
     <h1>Claude Accounts</h1>
-    <div class="alert" id="drift" hidden>~/.claude/settings.json holds a different token than the account in use.</div>
-    <div class="current">
-      <div class="k">In use</div>
-      <div class="v"><span class="dot" id="dot"></span><span id="current">Default login (no token)</span></div>
-    </div>
-    <!-- Panels can't run plugin commands, so the way in is a shortcut, shown first. -->
-    <div class="cta">
-      <div class="cta-row"><strong>Add, edit or switch</strong><kbd>⌘⇧M</kbd></div>
-      <div class="cta-row"><span>Switch to next account</span><kbd>⌘⇧J</kbd></div>
-    </div>
-    <div class="list" id="list"></div>
-    <div class="keys">
-      <div><span>All commands: ⌘J → “Claude Account”</span></div>
-    </div>
-    <div class="stamp" id="stamp"></div>
+    <div id="app"></div>
 
-    <script type="application/json" id="data">{"generatedAt":"1970-01-01T00:00:00.000Z","drift":false,"font":null,"accounts":[]}</script>
     <script>
-      'use strict'
-      var data = null
-      try {
-        data = JSON.parse(document.getElementById('data').textContent)
-      } catch (_) {}
+      ;(function () {
+        'use strict'
+        var api = window.orca
+        var ready = !!(api && api.plugin && api.plugin.request)
+        // Token entry and destructive edits are shown on the desktop app only. Orca
+        // leaves orca.shell out of browser clients and Orca mobile, so asking for it
+        // tells them apart. This is UI hiding only, not an access check: the worker
+        // cannot see who asked. It is just as true on a desktop paired to an Orca
+        // server, which shows these controls, and desktop frames with isolated
+        // frames switched off behave like a browser client.
+        var canEdit = !!(ready && api.host && api.host.has && api.host.has('shell.openExternal'))
 
-      var LIFETIME_DAYS = 365
-      var WARN_DAYS = 14
-      var DAY_MS = 86400000
+        var snapshot = null
+        var lastSeq = null // highest snapshot number seen; older replies and pushes are dropped
+        var pending = {} // key -> true while a request for that key is running
+        var errors = {} // key -> last error message
+        var drafts = {} // input id -> text typed so far
+        var openForm = null // { id, kind } with kind menu | rename | token | remove
+        var addOpen = false
+        var dirty = false // a newer snapshot arrived while a text field had focus
+        var pointerIsDown = false // a mouse button, pen or finger is pressed right now
+        // Writes queue behind a long token check on the worker, so they get Orca's maximum wait.
+        var WRITE_TIMEOUT_MS = 120000
 
-      function el(tag, className, text) {
-        var node = document.createElement(tag)
-        if (className) node.className = className
-        if (text !== undefined) node.textContent = text
-        return node
-      }
-
-      // Computed here, not baked in, so the countdown stays right between rewrites.
-      function expiry(account) {
-        var left = Math.floor((Date.parse(account.tokenUpdatedAt) + LIFETIME_DAYS * DAY_MS - Date.now()) / DAY_MS)
-        if (left < 0) return { text: 'expired ' + -left + 'd ago', cls: ' bad' }
-        if (left <= WARN_DAYS) return { text: 'expires in ' + left + 'd', cls: ' warn' }
-        return { text: left + 'd left', cls: '' }
-      }
-
-      function mini(name, win) {
-        var box = el('div', 'mini')
-        var level = !win ? '' : win.percent >= 100 || win.status === 'rejected' ? ' full' : win.percent >= 80 ? ' high' : ''
-        var head = el('div', 'mini-head')
-        head.appendChild(el('span', '', name))
-        head.appendChild(el('span', 'mini-pct' + level, win ? win.percent + '%' : '—'))
-        box.appendChild(head)
-        var track = el('div', 'mini-track')
-        var fill = el('div', 'mini-fill' + level)
-        fill.style.width = (win ? Math.min(win.percent, 100) : 0) + '%'
-        track.appendChild(fill)
-        box.appendChild(track)
-        return box
-      }
-
-      function usageRow(usage) {
-        var wrap = el('div', 'usage')
-        wrap.appendChild(mini('5h', usage.fiveHour))
-        wrap.appendChild(mini('7d', usage.sevenDay))
-        wrap.title = 'Usage read ' + new Date(usage.at).toLocaleString() + ' (refresh from Manage accounts)'
-        return wrap
-      }
-
-      function render() {
-        var list = document.getElementById('list')
-        list.textContent = ''
-        if (!data) {
-          list.appendChild(el('div', 'note', 'No data yet. Open Manage Accounts (⌘⇧M) once.'))
-          return
+        function h(tag, props, kids) {
+          var node = document.createElement(tag)
+          Object.keys(props || {}).forEach(function (key) {
+            var value = props[key]
+            if (key === 'class') node.className = value
+            else if (key === 'text') node.textContent = value
+            else if (key.slice(0, 2) === 'on') node.addEventListener(key.slice(2), value)
+            else if (value !== false && value != null) node.setAttribute(key, value === true ? '' : value)
+          })
+          ;(kids || []).forEach(function (kid) {
+            if (kid) node.appendChild(typeof kid === 'string' ? document.createTextNode(kid) : kid)
+          })
+          return node
         }
-        if (data.font) document.documentElement.style.setProperty('--panel-font', data.font)
-        var active = data.accounts.filter(function (a) {
-          return a.active
-        })[0]
-        document.getElementById('current').textContent = active ? active.label : 'Default login (no token)'
-        document.getElementById('dot').className = 'dot' + (active ? ' on' : '')
-        document.getElementById('drift').hidden = !data.drift
-        document.getElementById('stamp').textContent =
-          Date.parse(data.generatedAt) > 0 ? 'Updated ' + new Date(data.generatedAt).toLocaleString() : ''
 
-        if (!data.accounts.length) {
-          list.appendChild(el('div', 'empty', 'No accounts yet. Press ⌘⇧M to add one.'))
-          return
+        // Keeps the snapshot unless a newer one was already shown. Returns whether it was kept.
+        function accept(fresh) {
+          if (lastSeq !== null && fresh && typeof fresh.seq === 'number' && fresh.seq < lastSeq) return false
+          if (fresh && typeof fresh.seq === 'number') lastSeq = fresh.seq
+          snapshot = fresh
+          return true
         }
-        data.accounts.forEach(function (account) {
-          var row = el('div', 'row' + (account.active ? ' active' : ''))
-          row.appendChild(el('div', 'slot', String(account.slot)))
-          var info = el('div', 'info')
-          info.appendChild(el('div', 'label', account.label))
-          var meta = el('div', 'meta')
-          if (account.active) meta.appendChild(el('span', 'badge inuse', 'In use'))
-          var e = expiry(account)
-          meta.appendChild(el('span', 'badge' + e.cls, e.text))
-          info.appendChild(meta)
-          if (account.usage) info.appendChild(usageRow(account.usage))
-          row.appendChild(info)
-          list.appendChild(row)
-        })
-      }
 
-      render()
-      setInterval(render, 60 * 60 * 1000)
+        function message(error) {
+          return (error && error.message) || 'Something went wrong'
+        }
+
+        // Runs one request. Resolves true on success. The reply is the fresh snapshot.
+        function call(name, input, key) {
+          pending[key] = true
+          delete errors[key]
+          render()
+          return api.plugin
+            .request(name, input || {}, { timeoutMs: WRITE_TIMEOUT_MS })
+            .then(function (fresh) {
+              accept(fresh)
+              return true
+            })
+            .catch(function (error) {
+              errors[key] = message(error)
+              return false
+            })
+            .then(function (ok) {
+              delete pending[key]
+              render()
+              return ok
+            })
+        }
+
+        function load() {
+          return api.plugin
+            .request('accounts.list', {}, { timeoutMs: 15000 })
+            .then(function (fresh) {
+              accept(fresh)
+              delete errors.load
+            })
+            .catch(function (error) {
+              errors.load = message(error)
+            })
+            .then(renderUnlessTyping)
+        }
+
+        // Replacing the DOM under a focused text field breaks IME composition (Telex,
+        // VNI) and can drop characters. A change that arrives meanwhile is stored and
+        // drawn when the field loses focus. Actions the user just took still render at once.
+        function typing() {
+          var focused = document.activeElement
+          return !!(focused && focused.tagName === 'INPUT' && document.getElementById('app').contains(focused))
+        }
+
+        function renderUnlessTyping() {
+          if (typing()) dirty = true
+          else render()
+        }
+
+        function input(id, props) {
+          var node = h('input', Object.assign({ id: id, autocomplete: 'off', spellcheck: 'false' }, props))
+          node.value = drafts[id] || ''
+          node.addEventListener('input', function () {
+            drafts[id] = node.value
+          })
+          return node
+        }
+
+        function badge(text, cls) {
+          return h('span', { class: 'badge' + (cls ? ' ' + cls : ''), text: text })
+        }
+
+        function expiryBadge(account) {
+          if (account.expiry === 'expired') return badge('expired ' + -account.daysLeft + 'd ago', 'bad')
+          if (account.expiry === 'soon') return badge('expires in ' + account.daysLeft + 'd', 'warn')
+          return badge(account.daysLeft + 'd left')
+        }
+
+        function mini(name, win) {
+          var level = !win ? '' : win.percent >= 100 || win.status === 'rejected' ? ' full' : win.percent >= 80 ? ' high' : ''
+          var fill = h('div', { class: 'mini-fill' + level })
+          fill.style.width = (win ? Math.min(win.percent, 100) : 0) + '%'
+          return h('div', {}, [
+            h('div', { class: 'mini-head' }, [
+              h('span', { text: name }),
+              h('span', { class: 'mini-pct' + level, text: win ? win.percent + '%' : '—' })
+            ]),
+            h('div', { class: 'mini-track' }, [fill])
+          ])
+        }
+
+        function usageView(usage) {
+          var box = h('div', { class: 'usage' }, [mini('5h', usage.fiveHour), mini('7d', usage.sevenDay)])
+          box.title = 'Usage read ' + new Date(usage.at).toLocaleString()
+          return box
+        }
+
+        function closeForm() {
+          openForm = null
+          render()
+        }
+
+        function formFor(account) {
+          var key = account.id
+          var busy = !!pending[key]
+          var kind = openForm.kind
+          if (kind === 'menu') {
+            return h('div', { class: 'menu' }, [
+              h('button', { class: 'btn', text: 'Rename', onclick: function () { openForm = { id: key, kind: 'rename' }; render() } }),
+              h('button', { class: 'btn', text: 'Update token', onclick: function () { openForm = { id: key, kind: 'token' }; render() } }),
+              h('button', { class: 'btn danger', text: 'Remove', onclick: function () { openForm = { id: key, kind: 'remove' }; render() } })
+            ])
+          }
+          if (kind === 'rename') {
+            var labelId = 'rename-' + key
+            if (drafts[labelId] === undefined) drafts[labelId] = account.label
+            return h('div', { class: 'form' }, [
+              input(labelId, { 'aria-label': 'New label', maxlength: '80' }),
+              h('div', { class: 'actions' }, [
+                h('button', {
+                  class: 'btn primary', text: 'Save', disabled: busy,
+                  onclick: function () {
+                    call('accounts.rename', { id: key, label: drafts[labelId] }, key).then(function (ok) {
+                      if (ok) { delete drafts[labelId]; openForm = null; render() }
+                    })
+                  }
+                }),
+                h('button', { class: 'btn', text: 'Cancel', onclick: function () { delete drafts[labelId]; closeForm() } })
+              ])
+            ])
+          }
+          if (kind === 'token') {
+            var tokenId = 'token-' + key
+            return h('div', { class: 'form' }, [
+              input(tokenId, { type: 'password', placeholder: 'sk-ant-oat01-…', 'aria-label': 'New token' }),
+              h('div', { class: 'hint', text: 'Run `claude setup-token`, then paste the result.' }),
+              h('div', { class: 'actions' }, [
+                h('button', {
+                  class: 'btn primary', text: busy ? 'Checking…' : 'Save token', disabled: busy,
+                  onclick: function () {
+                    call('accounts.updateToken', { id: key, token: drafts[tokenId] }, key).then(function (ok) {
+                      if (ok) { delete drafts[tokenId]; openForm = null; render() }
+                    })
+                  }
+                }),
+                h('button', { class: 'btn', text: 'Cancel', onclick: function () { delete drafts[tokenId]; closeForm() } })
+              ])
+            ])
+          }
+          // remove
+          return h('div', { class: 'form' }, [
+            h('div', { text: 'Remove “' + account.label + '”? Its saved token is deleted.' }),
+            h('div', { class: 'actions' }, [
+              h('button', {
+                class: 'btn danger', text: 'Remove', disabled: busy,
+                onclick: function () {
+                  call('accounts.remove', { id: key }, key).then(function (ok) { if (ok) { openForm = null; render() } })
+                }
+              }),
+              h('button', { class: 'btn', text: 'Cancel', onclick: closeForm })
+            ])
+          ])
+        }
+
+        function rowView(account) {
+          var key = account.id
+          var busy = !!pending[key]
+          var meta = []
+          meta.push(expiryBadge(account))
+          if (account.checkState === 'invalid') meta.push(badge('token rejected', 'bad'))
+
+          var side = [
+            h('button', {
+              class: 'btn' + (account.active ? '' : ' primary'),
+              text: account.active ? 'In use' : 'Use',
+              disabled: account.active || busy,
+              onclick: function () { call('accounts.use', { id: key }, key) }
+            })
+          ]
+          if (canEdit) {
+            side.push(
+              h('button', {
+                class: 'btn icon', text: '⋯', 'aria-label': 'More for ' + account.label,
+                onclick: function () {
+                  openForm = openForm && openForm.id === key ? null : { id: key, kind: 'menu' }
+                  render()
+                }
+              })
+            )
+          }
+
+          var info = h('div', { class: 'info' }, [
+            h('div', { class: 'label', text: account.label }),
+            h('div', { class: 'meta' }, meta)
+          ])
+          if (account.usage) info.appendChild(usageView(account.usage))
+
+          var row = h('div', { class: 'row' + (account.active ? ' active' : '') }, [
+            h('div', { class: 'row-main' }, [
+              h('div', { class: 'slot', text: String(account.slot) }),
+              info,
+              h('div', { class: 'meta' }, side)
+            ])
+          ])
+          if (errors[key]) row.appendChild(h('div', { class: 'error', text: errors[key] }))
+          if (canEdit && openForm && openForm.id === key) row.appendChild(formFor(account))
+          return row
+        }
+
+        function addView() {
+          var busy = !!pending.add
+          if (!addOpen) {
+            return h('div', { class: 'toolbar' }, [
+              h('button', { class: 'btn', text: 'Add account', onclick: function () { addOpen = true; render() } })
+            ])
+          }
+          return h('div', { class: 'add' }, [
+            h('div', { class: 'form', style: 'border-top:0;margin-top:0;padding-top:0' }, [
+              input('add-label', { placeholder: 'Label, e.g. Work', 'aria-label': 'Label', maxlength: '80' }),
+              input('add-token', { type: 'password', placeholder: 'sk-ant-oat01-…', 'aria-label': 'Token' }),
+              h('div', { class: 'hint', text: 'Run `claude setup-token`, then paste the result.' }),
+              errors.add ? h('div', { class: 'error', text: errors.add }) : null,
+              h('div', { class: 'actions' }, [
+                h('button', {
+                  class: 'btn primary', text: busy ? 'Checking…' : 'Add', disabled: busy,
+                  onclick: function () {
+                    call('accounts.add', { label: drafts['add-label'], token: drafts['add-token'] }, 'add').then(function (ok) {
+                      if (ok) { delete drafts['add-label']; delete drafts['add-token']; addOpen = false; render() }
+                    })
+                  }
+                }),
+                h('button', {
+                  class: 'btn', text: 'Cancel',
+                  onclick: function () { delete drafts['add-label']; delete drafts['add-token']; delete errors.add; addOpen = false; render() }
+                })
+              ])
+            ])
+          ])
+        }
+
+        function render() {
+          var app = document.getElementById('app')
+          dirty = false
+          var focused = document.activeElement
+          var restore = focused && focused.id ? { id: focused.id, start: focused.selectionStart, end: focused.selectionEnd } : null
+          app.textContent = ''
+
+          if (!ready) {
+            app.appendChild(h('div', { class: 'empty', text: 'Open this panel inside Orca.' }))
+            return
+          }
+          if (!snapshot) {
+            if (errors.load) {
+              app.appendChild(h('div', { class: 'alert', text: 'Cannot reach the plugin: ' + errors.load }))
+              app.appendChild(h('button', { class: 'btn', text: 'Retry', onclick: load }))
+            } else {
+              app.appendChild(h('div', { class: 'empty', text: 'Loading…' }))
+            }
+            return
+          }
+
+          var active = snapshot.accounts.filter(function (a) { return a.active })[0]
+          if (snapshot.drift) {
+            app.appendChild(h('div', { class: 'alert', text: '~/.claude/settings.json holds a different token than the account in use.' }))
+          }
+          app.appendChild(
+            h('div', { class: 'current' }, [
+              h('div', { class: 'k', text: 'In use' }),
+              h('div', { class: 'v' }, [
+                h('span', { class: 'dot' + (active ? ' on' : '') }),
+                h('span', { text: active ? active.label : 'Default login (no token)' })
+              ])
+            ])
+          )
+
+          var busy = !!pending.toolbar
+          var none = !snapshot.accounts.length
+          app.appendChild(
+            h('div', { class: 'toolbar' }, [
+              h('button', {
+                class: 'btn', text: 'Default login', disabled: busy || !active,
+                onclick: function () { call('accounts.useNone', {}, 'toolbar') }
+              }),
+              h('button', {
+                class: 'btn', text: busy ? 'Working…' : 'Refresh usage', disabled: busy || none,
+                onclick: function () { call('accounts.usage', {}, 'toolbar') }
+              }),
+              h('button', {
+                class: 'btn', text: 'Check tokens', disabled: busy || none,
+                onclick: function () { call('accounts.check', {}, 'toolbar') }
+              })
+            ])
+          )
+          if (errors.toolbar) app.appendChild(h('div', { class: 'error', text: errors.toolbar }))
+
+          if (none) {
+            app.appendChild(
+              h('div', { class: 'empty', text: canEdit ? 'No accounts yet.' : 'No accounts yet. Add one on your computer.' })
+            )
+          } else {
+            app.appendChild(h('div', { class: 'list' }, snapshot.accounts.map(rowView)))
+          }
+          if (canEdit) app.appendChild(addView())
+          else if (!none) app.appendChild(h('div', { class: 'note stamp', text: 'Adding or editing tokens is done on your computer.' }))
+
+          app.appendChild(h('div', { class: 'stamp', text: 'Updated ' + new Date(snapshot.generatedAt).toLocaleTimeString() }))
+
+          if (restore) {
+            var again = document.getElementById(restore.id)
+            if (again) {
+              again.focus()
+              try { again.setSelectionRange(restore.start, restore.end) } catch (_) {}
+            }
+          }
+        }
+
+        render()
+        if (ready) {
+          api.plugin.on('accounts.changed', function (fresh) {
+            accept(fresh)
+            delete errors.load
+            renderUnlessTyping()
+          })
+          // Let focus settle first: moving between two fields fires focusout on the first.
+          // After the deferred redraw the field is checked again, so a new typing session is left alone.
+          function redrawWhenSettled() {
+            setTimeout(function () {
+              if (dirty && !typing()) render()
+            }, 0)
+          }
+          // Pressing a button blurs the field on pointerdown. Redrawing then could replace the
+          // button before the release, and the click would be lost. So while a press is held the
+          // redraw waits; the timer from the release runs after the click of the same press.
+          document.addEventListener('pointerdown', function () { pointerIsDown = true }, true)
+          function endPress() {
+            pointerIsDown = false
+            if (dirty) redrawWhenSettled()
+          }
+          document.addEventListener('pointerup', endPress, true)
+          document.addEventListener('pointercancel', endPress, true)
+          document.getElementById('app').addEventListener(
+            'focusout',
+            function () {
+              if (!pointerIsDown) redrawWhenSettled()
+            },
+            true
+          )
+          document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) load()
+          })
+          load()
+        }
+      })()
     </script>
   </body>
 </html>

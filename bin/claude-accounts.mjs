@@ -2,7 +2,6 @@
 // CLI companion to the Orca plugin: same store, usable from any terminal.
 import { createInterface } from 'node:readline'
 import { openUrl } from '../lib/open-in-orca.mjs'
-import { syncPanel } from '../lib/panel.mjs'
 import { BACKEND_LABELS } from '../lib/secrets.mjs'
 import { ensureManagerServer } from '../lib/server-process.mjs'
 import {
@@ -159,12 +158,7 @@ async function main([command, arg, ...rest]) {
   }
 }
 
-const READ_ONLY = new Set([undefined, 'list', 'ls', 'ui', 'help', '-h', '--help'])
-
-main(process.argv.slice(2))
-  // Mutations refresh the Orca sidebar panel too.
-  .then(() => (READ_ONLY.has(process.argv[2]) ? null : syncPanel((message) => console.error(message))))
-  .catch((error) => {
-    console.error(`claude-accounts: ${error.message}`)
-    process.exit(1)
-  })
+main(process.argv.slice(2)).catch((error) => {
+  console.error(`claude-accounts: ${error.message}`)
+  process.exit(1)
+})

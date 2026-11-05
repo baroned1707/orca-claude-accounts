@@ -1,0 +1,72 @@
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import { test } from 'node:test'
+import vm from 'node:vm'
+
+const html = await readFile(new URL('../panel.html', import.meta.url), 'utf8')
+const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1])
+
+test('the panel has exactly one inline script and it parses', () => {
+  assert.equal(scripts.length, 1)
+  assert.doesNotThrow(() => new vm.Script(scripts[0], { filename: 'panel.html' }))
+})
+
+test('the panel loads nothing from outside itself (browser clients cannot fetch files)', () => {
+  assert.ok(!/<script[^>]*\ssrc=/i.test(html), 'no external script')
+  assert.ok(!/<link[^>]*rel=["']stylesheet/i.test(html), 'no external stylesheet')
+  assert.ok(!/https?:\/\//i.test(html), 'no absolute URL')
+})
+
+test('the panel never builds markup from account text', () => {
+  assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(scripts[0]))
+})
+
+test('the panel only calls handlers the worker registers', async () => {
+  const { createAccountsApi } = await import('../lib/accounts-api.mjs')
+  const registered = new Set(Object.keys(createAccountsApi({})))
+  // `accounts.changed` is the event the worker pushes, not a handler.
+  const called = new Set(
+    [...scripts[0].matchAll(/['"](accounts\.[A-Za-z]+)['"]/g)].map((match) => match[1]).filter((name) => name !== 'accounts.changed')
+  )
+  assert.ok(called.size > 0)
+  for (const name of called) assert.ok(registered.has(name), `panel calls ${name}, which the worker does not handle`)
+})
+
+test('the panel listens for the event the worker pushes', async () => {
+  const worker = await readFile(new URL('../main.mjs', import.meta.url), 'utf8')
+  assert.ok(worker.includes("'accounts.changed'"))
+  assert.ok(scripts[0].includes("'accounts.changed'"))
+})
+
+test('the panel ignores snapshots older than the newest it has seen', () => {
+  assert.match(scripts[0], /\bseq\b/)
+  assert.equal(scripts[0].match(/snapshot\s*=\s*fresh/g)?.length, 1, 'only the seq check assigns a snapshot')
+})
+
+test('writes wait up to Orca\'s maximum, because they queue behind a long token check', () => {
+  assert.ok(!/timeoutMs:\s*30000/.test(scripts[0]), 'no 30 s default for writes')
+  assert.match(scripts[0], /timeoutMs:\s*WRITE_TIMEOUT_MS/)
+  assert.match(scripts[0], /WRITE_TIMEOUT_MS\s*=\s*120000/)
+  assert.match(scripts[0], /accounts\.list['"],\s*\{\},\s*\{\s*timeoutMs:\s*15000/)
+})
+
+test('the panel does not re-render under a focused text field', () => {
+  assert.match(scripts[0], /focusout/)
+  assert.match(scripts[0], /dirty/)
+})
+
+test('a press is not lost when a redraw is waiting for the field to lose focus', () => {
+  assert.match(scripts[0], /pointerIsDown/)
+  assert.match(scripts[0], /['"]pointerdown['"]/)
+  assert.match(scripts[0], /['"]pointerup['"]/)
+  assert.match(scripts[0], /['"]pointercancel['"]/)
+})
+
+test('the panel copy makes no claim it cannot keep', () => {
+  assert.ok(!html.includes('me@'), 'no email address in examples (labels are shown on remote clients)')
+  assert.ok(!html.includes('It stays on this computer'))
+})
+
+test('the remove confirmation does not claim where the token lives', () => {
+  assert.ok(!/deleted from this computer/.test(html))
+})
