@@ -1,17 +1,19 @@
 {
-  "manifestVersion": 1,
+  "$schema": "https://raw.githubusercontent.com/stablyai/orca/main/docs/schemas/plugins/orca-plugin.v2.schema.json",
+  "manifestVersion": 2,
+  "execution": "trusted-worker",
   "id": "claude-accounts",
   "publisher": "baroned",
   "name": "Claude Accounts",
-  "version": "0.12.0",
-  "description": "Add, label, update, remove and switch Claude Code accounts (one-year `claude setup-token` tokens kept in your system secret store), with token checks and per-account usage.",
+  "version": "0.13.0",
+  "description": "Add, label, update, remove and switch Claude Code accounts (one-year `claude setup-token` tokens kept in your system secret store), with token checks and per-account usage. The sidebar panel works on desktop, Orca mobile and the browser client.",
   "author": {
     "name": "Nguyễn Duy Khương",
     "url": "https://github.com/baroned1707"
   },
   "repository": "https://github.com/baroned1707/orca-claude-accounts",
   "engines": {
-    "orca": ">=1.4.0"
+    "orca": ">=1.4.248"
   },
   "pluginApi": 1,
   "main": "main.mjs",
@@ -24,69 +26,30 @@
         "entry": "panel.html"
       }
     ],
-    "commands": [
+    "statusBarItems": [
       {
-        "id": "manage",
-        "title": "Claude Account: Manage Accounts…",
-        "context": "global"
-      },
-      {
-        "id": "next",
-        "title": "Claude Account: Switch to Next",
-        "context": "global"
-      },
-      {
-        "id": "show",
-        "title": "Claude Account: Show Accounts",
-        "context": "global"
-      },
-      {
-        "id": "slot-1",
-        "title": "Claude Account: Use Slot 1",
-        "context": "global"
-      },
-      {
-        "id": "slot-2",
-        "title": "Claude Account: Use Slot 2",
-        "context": "global"
-      },
-      {
-        "id": "slot-3",
-        "title": "Claude Account: Use Slot 3",
-        "context": "global"
-      },
-      {
-        "id": "slot-4",
-        "title": "Claude Account: Use Slot 4",
-        "context": "global"
-      },
-      {
-        "id": "slot-5",
-        "title": "Claude Account: Use Slot 5",
-        "context": "global"
-      },
-      {
-        "id": "off",
-        "title": "Claude Account: Use Default Login (no token)",
-        "context": "global"
+        "id": "account",
+        "text": "Claude",
+        "icon": "bot",
+        "tooltip": "Claude account in use",
+        "command": "show"
       }
     ],
+    "commands": [
+      { "id": "manage", "title": "Claude Account: Manage Accounts…", "when": "global" },
+      { "id": "next", "title": "Claude Account: Switch to Next", "when": "global" },
+      { "id": "show", "title": "Claude Account: Show Accounts", "when": "global" },
+      { "id": "slot-1", "title": "Claude Account: Use Slot 1", "when": "global" },
+      { "id": "slot-2", "title": "Claude Account: Use Slot 2", "when": "global" },
+      { "id": "slot-3", "title": "Claude Account: Use Slot 3", "when": "global" },
+      { "id": "slot-4", "title": "Claude Account: Use Slot 4", "when": "global" },
+      { "id": "slot-5", "title": "Claude Account: Use Slot 5", "when": "global" },
+      { "id": "off", "title": "Claude Account: Use Default Login (no token)", "when": "global" }
+    ],
     "keybindings": [
-      {
-        "command": "manage",
-        "key": "Mod+Shift+M",
-        "when": "global"
-      },
-      {
-        "command": "next",
-        "key": "Mod+Alt+N",
-        "when": "global"
-      }
+      { "command": "manage", "key": "Mod+Shift+M", "when": "global" },
+      { "command": "next", "key": "Mod+Alt+N", "when": "global" }
     ]
   },
-  "capabilities": [
-    {
-      "kind": "notifications:show"
-    }
-  ]
+  "capabilities": [{ "kind": "notifications:show" }]
 }
