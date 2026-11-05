@@ -59,3 +59,7 @@ test('the panel copy makes no claim it cannot keep', () => {
   assert.ok(!html.includes('me@'), 'no email address in examples (labels are shown on remote clients)')
   assert.ok(!html.includes('It stays on this computer'))
 })
+
+test('the remove confirmation does not claim where the token lives', () => {
+  assert.ok(!/deleted from this computer/.test(html))
+})
