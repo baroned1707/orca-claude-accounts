@@ -176,14 +176,20 @@ two columns on wide screens and safe-area padding.
 
 ## 7b. Use it from your phone or another computer
 
-The sidebar panel works wherever Orca shows plugin panels: Orca mobile, the browser
-client (`orca serve`) and a desktop paired to an Orca server. It lists accounts,
-switches the account in use, refreshes usage and checks tokens. Adding an account,
-changing a token, renaming and removing are done in the desktop app, so a token is not
-typed on a remote client.
+The sidebar panel asks the plugin through Orca instead of reading a file, so it is built
+to work on any client that shows plugin panels: Orca mobile, the browser client
+(`orca serve`) and a desktop paired to an Orca server. It lists accounts, switches the
+account in use, refreshes usage and checks tokens. Adding an account, changing a token,
+renaming and removing are shown only in the desktop app, so a token is not typed on a
+remote client.
 
-The full Manage page (`⌘⇧M`) still exists and, if you open its browser tab on your
-phone, still accepts tokens there. The panel replaces it in the next release.
+> **Not yet confirmed on real devices.** The panel is tested with a simulated Orca and on
+> the desktop app. Whether Orca mobile, the browser client and a paired desktop show it
+> and let it call the plugin is still being checked; until then use the Manage page below
+> from your phone.
+
+The full Manage page (`⌘⇧M`) is unchanged. If you open its browser tab on your phone it
+still accepts tokens there.
 
 <img src="docs/images/sidebar-panel-mobile.png" alt="Sidebar panel on a phone" width="300">
 
